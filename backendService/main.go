@@ -3,13 +3,20 @@ package  main
 import (
     "log"
     "net/http"
+    "os"
+    "github.com/joho/godotenv"
 )
 
 /**
     main - function  of  the project START
 */
 func  main() {
-    setUpServer(":3000")
+    err := godotenv.Load()
+    if err != nil {
+        log.Fatalf("Could  not  load  enviroment  varibales  due to %v" ,err)
+    }
+    serverPort :=  os.Getenv("serverPort")
+    setUpServer(serverPort)
 }
 
 /**
