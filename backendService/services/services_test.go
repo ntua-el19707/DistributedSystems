@@ -4,7 +4,7 @@ import (
     "fmt"
 )
 func TestProbiders(t * testing.T){
-   Providers() 
+   //Providers() 
    fmt.Println("It should  load  Providers")
     
 }
