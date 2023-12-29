@@ -9,13 +9,14 @@ import (
     "encoding/pem"
     "errors"
     "fmt"
+    "sync"
 
 )
 
 
 const walletSize = 2048
 //Wallet Success Messages 
-const createdWalletMessage = "Has  succesfully  created  a new  wallet with  address \n%s"
+const createdWalletMessage = "Has  succesfully  created  a new  wallet with  address %s"
 // Wallet Errors Template
 const failedToGenerateKeys = "Failed  to generate Keys  due to : %s "
 
@@ -25,7 +26,9 @@ type WalletService  interface {
     generate_wallet(size int ) error
     sign(transaction TransactionService) error 
     getPub() *  rsa.PublicKey
-
+    Freeze(coins  float64) 
+    UnFreeze(coins float64)
+    getFreeze() float64   
 }
 // -- walletStructV1Service --
 /**
@@ -36,6 +39,8 @@ type WalletService  interface {
 type  walletStructV1Service  struct {
     PublicKey  *   rsa.PublicKey
     privateKey  * rsa.PrivateKey
+    frozen  float64
+    mu sync.Mutex
     loggerService  LogerService 
 }
 
@@ -50,13 +55,13 @@ func  (wallet *  walletStructV1Service ) construct () error {
     }
     
     logger := wallet.loggerService
-    logger.Log("Start construction of  a new wallet\n")
+    logger.Log("Start construction of  a new wallet")
     err := wallet.generate_wallet(walletSize)
     if err != nil {
-         logger.Log("Abbort construction of  a new wallet\n")
+         logger.Log("Abbort construction of  a new wallet")
          return err
     }
-     logger.Log("Commit construction of  a new wallet\n")
+     logger.Log("Commit construction of  a new wallet")
     return nil
 //? Note  for  thought  if i save  the  keys in  phisicall storage
 //? i  can change the construct and  make  it so evry time  that  the  process  rice  has  the same  wallet
@@ -68,7 +73,7 @@ func  (wallet *  walletStructV1Service ) construct () error {
 func (wallet *  walletStructV1Service) generate_wallet(size  int) error {
     //generate  rsa key
     logger := wallet.loggerService
-    logger.Log("Start create  a new wallet\n")
+    logger.Log("Start create  a new wallet")
     var err  error 
     wallet.privateKey ,  err =  rsa.GenerateKey(rand.Reader ,  size) 
 
@@ -82,7 +87,7 @@ func (wallet *  walletStructV1Service) generate_wallet(size  int) error {
     if  err != nil {
         return  err
     }
-   logger.Log("Commit  wallet created\n")
+   logger.Log("Commit  wallet created")
     return  nil
 }
 /**
@@ -105,32 +110,32 @@ func (wallet *  walletStructV1Service)sign(transactionService TransactionService
 	    }
 	    return signature, nil
     }
-    logger.Log("Start  getTransaction\n")
+    logger.Log("Start  getTransaction")
     transaction  , err := transactionService.getTransaction()
     if  err != nil {
-        const  errorTemplate =  "Abbort  error :  Failed  to   getTransaction  due to %s\n"
+        const  errorTemplate =  "Abbort  error :  Failed  to   getTransaction  due to %s"
         message :=  fmt.Sprintf(errorTemplate ,  err.Error())
         logger.Log(message)
         err = errors.New(logger.Sprintf(message))
         return  err
 
     }
-    logger.Log("Commit getTransaction\n")
+    logger.Log("Commit getTransaction")
 	// Sign the document
-    logger.Log("Start signDocument\n")
+    logger.Log("Start signDocument")
 	signature, err := signDocument(transaction)
 	if err != nil {
-        const  errorTemplate =  "Abbort  error :  Failed  to   signTransaction  due to %s\n"
+        const  errorTemplate =  "Abbort  error :  Failed  to   signTransaction  due to %s"
         message :=  fmt.Sprintf(errorTemplate ,  err.Error())
         logger.Log(message)
         err = errors.New(logger.Sprintf(message))
 		return err
 	}
-    logger.Log("Commit signDocument\n")
-    logger.Log("Start setSign\n")
+    logger.Log("Commit signDocument")
+    logger.Log("Start setSign")
     transactionService.setSign(signature)
-    logger.Log("Commit setSign\n")
-    logger.Log("Commit  sign  transaction\n")
+    logger.Log("Commit setSign")
+    logger.Log("Commit  sign  transaction")
     return  nil
 }
 /**
@@ -148,7 +153,7 @@ func (wallet   walletStructV1Service) getPub()  * rsa.PublicKey {
 */
 func encodeToPemPublicKey(key rsa.PublicKey ,  logger LogerService)  ( string ,error) {
     
-    logger.Log("will attempt to parse  rsa.PublicKey to pem format\n")
+    logger.Log("will attempt to parse  rsa.PublicKey to pem format")
     publicKeyPEM, err := x509.MarshalPKIXPublicKey(&key)
     if err != nil {
         message := fmt.Sprintf("Error : Marshal Failed Due to %s" , err.Error())
@@ -159,10 +164,29 @@ func encodeToPemPublicKey(key rsa.PublicKey ,  logger LogerService)  ( string ,e
         Bytes: publicKeyPEM,
     }
     publicKeyPEMBytes := pem.EncodeToMemory(publicKeyPEMBlock)
-    logger.Log("parsed the  rsa.PublicKey to pem format\n")
+    logger.Log("parsed the  rsa.PublicKey to pem format")
     return  string(publicKeyPEMBytes) ,nil 
 
 }
+func  (wallet *  walletStructV1Service ) Freeze(coins  float64) {
+    wallet.mu.Lock()
+    wallet.frozen += coins 
+    wallet.mu.Unlock() 
+} 
+func  (wallet *  walletStructV1Service ) UnFreeze(coins  float64) {
+    wallet.loggerService.Log("start unfreeze  money")
+    wallet.mu.Lock()
+    wallet.frozen -=  coins 
+    wallet.mu.Unlock() 
+    wallet.loggerService.Log("commit unfreeze  money")
+}
+func  (wallet *  walletStructV1Service ) getFreeze() float64 {
+    wallet.mu.Lock()
+    coins := wallet.frozen
+    wallet.mu.Unlock() 
+    return  coins 
+}
+
 /**
     encodeToPemPrivateKey - parse  rsa to pem 
     @Param key rsa.PublicKey 
@@ -181,3 +205,46 @@ func encodeToPemPrivateKey(key * rsa.PrivateKey ,logger LogerService ) ( string)
 
 
 }
+
+//Mock Wallet 
+type  mockWallet struct {
+    errorGenerateWallet error 
+    errorSignWallet error 
+    counterGeneratorWallet int 
+    counterSign int 
+    counterGetPub int
+    counterFreeze int 
+    counterUnFreeze int
+    countergetFreeze int 
+    frozen float64
+
+}
+func  (mock *  mockWallet ) construct() error  {
+    return nil 
+}
+func  (mock *  mockWallet ) generate_wallet( size  int ) error  {
+    mock.counterGeneratorWallet++
+    return mock.errorGenerateWallet 
+}
+func  (mock *  mockWallet ) sign( transation TransactionService) error  {
+    mock.counterSign++
+    return mock.errorSignWallet
+}
+func  (mock *  mockWallet ) getPub()  * rsa.PublicKey  {
+    mock.counterGetPub++
+    return &rsa.PublicKey{}
+}
+func  (mock *  mockWallet ) Freeze( coins float64)    {
+
+    mock.counterFreeze++ 
+}
+func  (mock *  mockWallet ) UnFreeze( coins float64)    {
+    mock.counterUnFreeze++ 
+}
+func  (mock *  mockWallet ) getFreeze()   float64 {
+    mock.countergetFreeze++ 
+    return mock.frozen 
+}
+
+
+

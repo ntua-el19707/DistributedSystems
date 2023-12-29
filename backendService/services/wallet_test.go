@@ -35,7 +35,7 @@ func TestWalletCreateServiceVersionStruct1(t * testing.T){
 func TestWalletSign(t * testing.T){
  
    service , _,  _ :=  buildWalletService()
-   tservice ,_ ,_,_ ,transaction ,_ :=  buildTransactionService()
+   tservice ,_ ,_,_ ,transaction ,_  ,_ :=  buildTransactionService()
    transaction.Amount = 10
    err := tservice.CreateTransaction()
    if err!=nil {

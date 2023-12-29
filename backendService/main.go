@@ -5,6 +5,7 @@ import (
     "net/http"
     "os"
     "github.com/joho/godotenv"
+    "services"
 )
 
 /**
@@ -24,6 +25,7 @@ func  main() {
     @Param  serverPort string 
  */
  func  setUpServer(serverPort string){
+     services.Providers()
      server := &http.ServeMux{}
      //*  SET THE  ROUTER FUNCTION 
      setUpMainRouter(server)

@@ -13,6 +13,7 @@ type LogerService interface {
     Error(msg  string) // logs error  message  in  stdout 
 	Fatal(msg  string ) // log Fatal  meassge 
 	Sprintf(msg string) string // return  the message that would be logged
+    SprintErrorf(msg  string) string  // return error  string
 } 
 
 type Logger struct {
@@ -58,26 +59,37 @@ func (loger * Logger) Sprintf(msg string) string  {
 }
 
 
+/**
+   SprintErrorf  sprintf  the  message with error  template  
+   @Returns  string
+*/
+func (loger * Logger) SprintErrorf(msg string) string  {
+	return fmt.Sprintf(loggerErrorTeplate , loger.ServiceName ,  msg)
+}
 // -- Mocks  For  Testing -- 
 type mockLogger struct {
 	logs []string
-	Faults []  string
-    errors []  string
+	Faults []string
+    errorList [] string
 }
 // mock Log 
 func (m *mockLogger) Log(msg string) {
-	m.logs = append(m.logs, msg)
+    m.logs = append(m.logs, msg)
 }
-
 // mock Error
 func (m *mockLogger) Error(msg string) {
-	m.errors = append(m.errors, msg)
+    m.errorList = append(m.errorList ,  msg)
 }
 // mock error 
 func (m *mockLogger) Fatal(msg string) {
 	m.Faults = append(m.Faults, msg)
 }
+
 func (m *mockLogger) Sprintf(msg string) string {
+	return msg
+}
+
+func (m *mockLogger) SprintErrorf(msg string) string {
 	return msg
 }
 func (m *mockLogger)  construct() error{

@@ -1,5 +1,5 @@
 package  services
-import "log"
+
 type  Service interface {
 	construct()error  
 }
@@ -16,36 +16,34 @@ const balanceServiceName string = "balanceService"
 const walletServiceName = "walletService"
 const generatorServiceName = "generatorService"
 const transactionServiceName = "transactionService"
-//Logger  Services 
-var LogerServiceBalance LogerService
-var LogerServiceWallet LogerService
+
 //Services  of Application
-var  Wallet_Service  WalletService 
-var  Balance_Service BalanceService
-var  Generator_Service GeneratorService
+var TransactionManagerInstanceService TransactionManagerService
+var BalanceInstanceService BalanceService
 /** Providers - will create  the servies  and if  the servoice  can  be created  fall the system 
 */
 func Providers(){
-	list := make ([]  Service , 0) 
-	//first Logger services 
-	LogerServiceBalance = &Logger{ServiceName:balanceServiceName}
-	list = append(list  , LogerServiceBalance)
-	LogerServiceWallet = &Logger{ServiceName:walletServiceName}
-	list = append(list  , LogerServiceWallet)
-	
-	Wallet_Service = &walletStructV1Service{}
-	list = append(list  , Wallet_Service)
-	Balance_Service = &balanceImplementation{}
-	list = append(list  , Balance_Service)
-	Generator_Service = &generatorImplementation{ServiceName:generatorServiceName ,CharSet:"abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789"}
-		list = append(list  , Generator_Service)
-	for  _,service := range  list {
-		err := construct(service)
-		if err != nil {
-			log.Fatal(err.Error())
-		}
-
+	logger :=  &Logger{ServiceName:"Providers"}
+	logger.Log("Start  Loadding  Providers")
+	wallet := &walletStructV1Service{}
+    err :=  wallet.construct() 
+	if err != nil {
+		logger.Fatal(err.Error())
 	}
+	BalanceInstanceService = &balanceImplementation{walletService:wallet}
+	err = BalanceInstanceService.construct()
+		if err != nil {
+		logger.Fatal(err.Error())
+	}
+	TransactionManagerInstanceService =&TransactionManager{ walletService:wallet , balanceService:BalanceInstanceService}
+	err = TransactionManagerInstanceService.construct()
+		if err != nil {
+		logger.Fatal(err.Error())
+	}
+	logger.Log("Commit  Loading  Providers")
+	
+	
+	
 	
 }
 
