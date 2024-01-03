@@ -8,6 +8,7 @@ import (
 	"fmt"
 	"errors"
 	"encoding/json"
+	"entitys"
 )
 type  TransactionService interface {
 	Service
