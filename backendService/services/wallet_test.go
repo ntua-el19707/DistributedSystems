@@ -36,7 +36,7 @@ func TestWalletSign(t * testing.T){
  
    service , _,  _ :=  buildWalletService()
    tservice ,_ ,_,_ ,transaction ,_  ,_ :=  buildTransactionService()
-   transaction.Amount = 10
+   transaction.Transaction.Transaction.Amount = 10
    err := tservice.CreateTransaction()
    if err!=nil {
     t.Error("failed to create  transaction" + err.Error())

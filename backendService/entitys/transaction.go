@@ -50,12 +50,16 @@ type  TransactionRecord  interface {
 	 JsonStringfy()  ([] byte , error)
 } 
 
-type  TransactionTransport struct  {
-	Record TransactionRecord  `json:"Transaction"`
-	Signiture  []  byte  `json:"Signiture"`
+type  TransactionCoinEntityRoot   struct  {
+	Transaction TransactionCoins  `json:"transaction"`
+	Signiture  []  byte  `json:"signiture"`
 }
 
 func  JsonStringfy( i  TransactionRecord )([] byte , error){
 	return  i.JsonStringfy()
+}
+type  TransactionMsgEntityRoot   struct  {
+	Transaction TransactionMsg  `json:"transaction"`
+	Signiture  []  byte  `json:"signiture"`
 }
 

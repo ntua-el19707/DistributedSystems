@@ -3,7 +3,7 @@ import (
     "errors"
     "crypto/rsa"
     "fmt"
-
+    "entitys"
 )
 
 
@@ -57,11 +57,11 @@ func  (transactionManager   TransactionManager ) TransferMoney( to ,  validator 
     channel :=  make  (chan  transactionErrorPair ,  2 )
     createTransaction :=  func (money float64 ,  Receiver  *  rsa.PublicKey  ,  reason string ,  channel  chan transactionErrorPair )  {
         // Create  Transaction
-        receiver := Person{Address:*Receiver}
-        pair := SendReceivePair{ Receiver:receiver  ,  }
-        standard := TransactionsStandard{serviceName:transactionServiceName , SenderRecieverPair: pair ,balanceService:transactionManager.balanceService , walletService :transactionManager.walletService  } 
-       
-        transaction  := TransactionCoins{Amount:money ,TransactionStandard:standard ,   Reason:reason ,  }
+        receiver := entitys.Client{Address:*Receiver}
+        pair := entitys.BillingInfo{To :receiver  ,  }
+        standard := TransactionsStandard{serviceName:transactionServiceName  ,balanceService:transactionManager.balanceService , walletService :transactionManager.walletService  } 
+        transactionInfo := entitys.TransactionCoins{BillDetails:entitys.TransactionDetails{Bill:pair} , Amount:money , Reason:reason}
+        transaction  := TransactionCoins{Transaction:  entitys.TransactionCoinEntityRoot{Transaction:transactionInfo}  , services:standard  ,  }
         var rsp transactionErrorPair
         err := transaction.construct() 
         if  err  != nil {
@@ -140,11 +140,12 @@ func (transactionManager    TransactionManager) SendMessage( to , validatorMsg ,
     msgExec := func( msg  string , tpair chan  transactionErrorPair  ) {
         //create msg transactio
 
-        receiver := Person{Address:*to }
-        pair :=  SendReceivePair{ Receiver:receiver , }
-        
-        standard := TransactionsStandard{serviceName:transactionServiceName ,SenderRecieverPair: pair , balanceService:transactionManager.balanceService , walletService :transactionManager.walletService ,} 
-        t := &TransactionMsg{TransactionStandard: standard , Msg:msg} 
+     receiver := entitys.Client{Address: * to}
+        pair := entitys.BillingInfo{To :receiver  ,  }
+        standard := TransactionsStandard{serviceName:transactionServiceName  ,balanceService:transactionManager.balanceService , walletService :transactionManager.walletService  } 
+        transactionInfo := entitys.TransactionMsg{BillDetails:entitys.TransactionDetails{Bill:pair} , Msg:msg}
+
+        t := &TransactionMsg{services: standard , Transaction:entitys.TransactionMsgEntityRoot{Transaction:transactionInfo}} 
         err  := t.construct() 
         if err != nil {
             tpair <- transactionErrorPair{Service:nil , Err:err , }

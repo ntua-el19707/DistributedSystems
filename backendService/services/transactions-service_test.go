@@ -12,7 +12,7 @@ func  buildTransactionMsgService()( TransactionService ,  * mockLogger , * mockG
 	mockFindBalance := &mockFindBalance{} 
     wallet := &mockWallet{} 
     transactionStandard := TransactionsStandard{serviceName:transactionServiceName ,walletService:wallet, loggerService:mockLogger ,  balanceService:mockFindBalance ,generatorService:mockGenerator }
-	transaction :=  &TransactionMsg{TransactionStandard:transactionStandard, }
+	transaction :=  &TransactionMsg{services:transactionStandard, }
 	transactionService := transaction
 	err := transactionService.construct()
 	if err != nil {
@@ -28,7 +28,7 @@ func  buildTransactionService()( TransactionService ,  * mockLogger , * mockGene
 	mockFindBalance := &mockFindBalance{} 
     wallet := &mockWallet{} 
     transactionStandard := TransactionsStandard{serviceName:transactionServiceName ,walletService:wallet, loggerService:mockLogger ,  balanceService:mockFindBalance ,generatorService:mockGenerator }
-	transaction :=  &TransactionCoins{TransactionStandard:transactionStandard, }
+	transaction :=  &TransactionCoins{services:transactionStandard, }
 	transactionService := transaction
 	err := transactionService.construct()
 	if err != nil {
@@ -79,9 +79,9 @@ func  TestCreateServiceTransaction( t * testing.T){
 func TestCreateTransactionInvalid( t * testing.T ){
 	service,_,_,findBalance, transaction , wallet ,_ := buildTransactionService()
 	findBalance.amount = 10 
-    transaction.Amount = 15 
+    transaction.Transaction.Transaction.Amount = 15 
     wallet.frozen = 15 
-    errmsg := fmt.Sprintf("Request To  sent  %.3f  from  %.3f  balance Failed  due to total Money Froze(for wallet  ) %.3f\n" , transaction.Amount,  findBalance.amount  , wallet.frozen )	
+    errmsg := fmt.Sprintf("Request To  sent  %.3f  from  %.3f  balance Failed  due to total Money Froze(for wallet  ) %.3f\n" , transaction.Transaction.Transaction.Amount,  findBalance.amount  , wallet.frozen )	
 	err := service.CreateTransaction() 
 	if err == nil {
 		t.Errorf("It should be  invalid")
@@ -120,8 +120,8 @@ func TestCreateTransactionInvalid( t * testing.T ){
 func TestCreateTransactionvalid( t * testing.T ){
 	service,logger,_,findBalance, transaction , wallet ,_ := buildTransactionService()
 	findBalance.amount = 100 
-    transaction.Amount = 15 
-    wallet.frozen  = transaction.Amount 
+    transaction.Transaction.Transaction.Amount = 15 
+    wallet.frozen  = transaction.Transaction.Transaction.Amount
 	logger.logs = make([] string , 0)
 	err := service.CreateTransaction()
 	if err != nil {
