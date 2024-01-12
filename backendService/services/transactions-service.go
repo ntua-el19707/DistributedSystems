@@ -12,19 +12,14 @@ import (
 type  TransactionService interface {
 	Service
 	CreateTransaction() error 
-	VerifySignature(PublicKey  *  rsa.PublicKey   ) error
+	VerifySignature( ) error
 	setSign(signiture  [] byte)
     getTransaction() ([] byte ,error) 
 	getSigniture() [] byte
 	getAmount() float64
+	getInterface() interface{}
 }
-type  Person struct{
-	Address rsa.PublicKey `json:"address"`
-} 
-type  SendReceivePair struct {
-	Sender Person `json:"sender"`
-	Receiver Person `json:"receiver"`
-}
+
 type  TransactionsStandard struct {
 	serviceName string 
 	loggerService LogerService 
@@ -122,7 +117,7 @@ func  (t *  TransactionCoins ) CreateTransaction()  error {
         return err
     }
 	
-   	transaction.BillDetails.Bill.From.Address = * services.walletService.getPub() 
+   	transaction.BillDetails.Bill.From.Address = * services.walletService.GetPub() 
 	bill := transaction.BillDetails.Bill
 	transactionDetails :=  fmt.Sprintf("%s From %v to %v  For  %f" , transaction.BillDetails.Transaction_id , bill.From.Address , bill.To.Address , transaction.Amount )
 	
@@ -194,12 +189,15 @@ func  (t  TransactionCoins ) getTransaction() ([]  byte , error)  {
 	@Param  siginiture  string
 
 */
-func  (t  TransactionCoins ) VerifySignature(PublicKey  *  rsa.PublicKey   ) error  {
+func  (t  TransactionCoins ) VerifySignature(   ) error  {
+	logger := t.services.loggerService
+	logger.Log(fmt.Sprintf("Start  Verifying  Transaction_id :%s " ,  t.Transaction.Transaction.BillDetails.Transaction_id))
 	//define  verify 
 	verify :=   func(transaction []  byte ) error {
+		PublicKey := t.Transaction.Transaction.BillDetails.Bill.From.Address
 		hashed := sha256.Sum256(transaction)
     
-		err := rsa.VerifyPKCS1v15(PublicKey, crypto.SHA256, hashed[:], t.getSigniture())
+		err := rsa.VerifyPKCS1v15(&PublicKey, crypto.SHA256, hashed[:], t.getSigniture())
 		if  err != nil {
 			return  err
 		}
@@ -207,12 +205,22 @@ func  (t  TransactionCoins ) VerifySignature(PublicKey  *  rsa.PublicKey   ) err
 	}
 	data ,  err := t.getTransaction()
 	if  err != nil {
+		logger.Error(fmt.Sprintf("Abbort  Verifying  Transaction_id :%s " ,  t.Transaction.Transaction.BillDetails.Transaction_id))
 		return err
 	}
-	return  verify(data)
+	err = verify(data)
+	if  err != nil {
+		logger.Log(fmt.Sprintf("Commit  Verifying  Transaction_id :%s (invalid)" ,  t.Transaction.Transaction.BillDetails.Transaction_id))
+		return err
+	}
+	logger.Log(fmt.Sprintf("Commit  Verifying  Transaction_id :%s (valid)" ,  t.Transaction.Transaction.BillDetails.Transaction_id))
+	return  nil
 }
 func  (t  TransactionCoins ) getSigniture() ([]  byte )  {
 	return t.Transaction.Signiture}
+	func  (t  TransactionCoins )  getInterface() interface{} {
+		return  t.Transaction
+	}
 
 type  TransactionMsg struct {	
 	Transaction	 entitys.TransactionMsgEntityRoot
@@ -247,7 +255,7 @@ func   (t *TransactionMsg) CreateTransaction()  error {
         return err
     }
 	
-   	transaction.BillDetails.Bill.From.Address = * services.walletService.getPub() 
+   	transaction.BillDetails.Bill.From.Address = * services.walletService.GetPub() 
 	bill := transaction.BillDetails.Bill
 	transactionDetails :=  fmt.Sprintf("%s From %v to %v  For  %s" , transaction.BillDetails.Transaction_id , bill.From.Address , bill.To.Address , transaction.Msg )
 	
@@ -286,12 +294,13 @@ func  (t   TransactionMsg  ) getAmount() float64{
 	@Param  siginiture  string
 
 */
-func  (t  TransactionMsg ) VerifySignature(PublicKey  *  rsa.PublicKey   ) error  {
+func  (t  TransactionMsg ) VerifySignature() error  {
 	//define  verify 
 	verify :=   func(transaction []  byte ) error {
+		PublicKey := t.Transaction.Transaction.BillDetails.Bill.From.Address
 		hashed := sha256.Sum256(transaction)
     
-		err := rsa.VerifyPKCS1v15(PublicKey, crypto.SHA256, hashed[:], t.getSigniture())
+		err := rsa.VerifyPKCS1v15(&PublicKey, crypto.SHA256, hashed[:], t.getSigniture())
 		if  err != nil {
 			return  err
 		}
@@ -306,5 +315,7 @@ func  (t  TransactionMsg ) VerifySignature(PublicKey  *  rsa.PublicKey   ) error
 func  (t  TransactionMsg ) getSigniture() ([]  byte )  {
 	return t.Transaction.Signiture
 }
-
+	func  (t  TransactionMsg )  getInterface() interface{} {
+		return  t.Transaction
+	}
 

@@ -113,7 +113,21 @@ func  (transactionManager   TransactionManager ) TransferMoney( to ,  validator 
          
             transactionManager.walletService.UnFreeze(depend)
         }
-     } 
+     }
+     if len(transactions) == 2  {
+        list := make( []  entitys.TransactionCoinEntityRoot  ,0  )
+        for  _ , tr:=  range  transactions {
+            entity  , ok := tr.getInterface().(entitys.TransactionCoinEntityRoot)
+            if  ok {
+                list = append(list , entity)
+            }
+        }
+ 
+        BlockChainCoinsService.InsertTransaction(list)
+
+     }
+
+
     return  transactions , errTransaction 
 
 }    

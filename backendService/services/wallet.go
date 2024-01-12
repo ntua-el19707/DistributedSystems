@@ -25,7 +25,7 @@ type WalletService  interface {
     // will  generate  a wallet 
     generate_wallet(size int ) error
     sign(transaction TransactionService) error 
-    getPub() *  rsa.PublicKey
+    GetPub() *  rsa.PublicKey
     Freeze(coins  float64) 
     UnFreeze(coins float64)
     getFreeze() float64   
@@ -139,10 +139,10 @@ func (wallet *  walletStructV1Service)sign(transactionService TransactionService
     return  nil
 }
 /**
-    getPub - get publickey  
+    GetPub - get publickey  
     @Return  rsa.PublicKey
 */
-func (wallet   walletStructV1Service) getPub()  * rsa.PublicKey {
+func (wallet   walletStructV1Service) GetPub()  * rsa.PublicKey {
        return  wallet.PublicKey
 }
 
@@ -174,11 +174,11 @@ func  (wallet *  walletStructV1Service ) Freeze(coins  float64) {
     wallet.mu.Unlock() 
 } 
 func  (wallet *  walletStructV1Service ) UnFreeze(coins  float64) {
-    wallet.loggerService.Log("start unfreeze  money")
+    wallet.loggerService.Log(fmt.Sprintf("start unfreeze  money %.3f ", coins))
     wallet.mu.Lock()
     wallet.frozen -=  coins 
     wallet.mu.Unlock() 
-    wallet.loggerService.Log("commit unfreeze  money")
+    wallet.loggerService.Log(fmt.Sprintf("commit unfreeze  money %.3f ", coins))
 }
 func  (wallet *  walletStructV1Service ) getFreeze() float64 {
     wallet.mu.Lock()
@@ -230,7 +230,7 @@ func  (mock *  mockWallet ) sign( transation TransactionService) error  {
     mock.counterSign++
     return mock.errorSignWallet
 }
-func  (mock *  mockWallet ) getPub()  * rsa.PublicKey  {
+func  (mock *  mockWallet ) GetPub()  * rsa.PublicKey  {
     mock.counterGetPub++
     return &rsa.PublicKey{}
 }

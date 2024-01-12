@@ -35,7 +35,8 @@ func (balance * balanceImplementation )	findBalance(sender rsa.PublicKey ) ( flo
 	const lookingTemplate = "Look for  \n%v\n balance"
 	lookingMessage := fmt.Sprintf(lookingTemplate  ,sender)  
 	balance.loggerService.Log(lookingMessage)
-	return 16 , nil
+	b ,err:= BlockChainCoinsService.FindBalance()
+	return b , err
 }
 func (balance * balanceImplementation )	LockBalance( ) {
     balance.mu.Lock() 
