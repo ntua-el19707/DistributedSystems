@@ -60,4 +60,5 @@ func setRouterForV1(v1 * http.ServeMux, prefixV1 string){
     v1.HandleFunc("/transfer"  , TransferMoneyV1)
         log.Printf(setUpRouteMessage, fmt.Sprintf("%s/send" , prefixV1))
     v1.HandleFunc("/send"  , SendMsgV1)
+    v1.HandleFunc("/balance"  , balanceV1)
 }
