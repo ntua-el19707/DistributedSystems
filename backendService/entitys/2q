@@ -1,0 +1,102 @@
+package entitys
+
+import (
+	"Logger"
+	"crypto/rand"
+	"crypto/rsa"
+	"fmt"
+	"testing"
+)
+
+//Test cases   for  Block
+
+func TestGenesisBlock(t *testing.T) {
+	block := Block{}
+	validator := rsa.PublicKey{}
+	logger := &Logger.MockLogger{}
+	block.Genesis(validator, "1111", "2222", logger)
+	if block.Index != 0 || block.ParentHash != "1111" || block.CurrentHash != "2222" || block.Validator != validator {
+		t.Errorf("The  block Index %d ,  Parent %s  , Current %s  and validator  %v but got  %d_%s_%s_%v", 0, "1111", "2222", validator, block.Index, block.ParentHash, block.CurrentHash, block.Validator)
+	}
+	fmt.Println("It should  genesis  a general block")
+}
+
+func TestGenesisBlockCoin(t *testing.T) {
+	blockCoin := BlockCoinEntity{}
+	blockCoin.workers = 5
+	blockCoin.perNode = 1000.0
+	keyGen := func(n int) ([]rsa.PublicKey, error) {
+		var publicKeys []rsa.PublicKey
+
+		for i := 0; i < n; i++ {
+			privateKey, err := rsa.GenerateKey(rand.Reader, 2048)
+			if err != nil {
+				return nil, fmt.Errorf("failed to generate RSA key pair: %v", err)
+			}
+			publicKeys = append(publicKeys, privateKey.PublicKey)
+		}
+		return publicKeys, nil
+	}
+	keys, _ := keyGen(1)
+	validator := keys[0]
+	logger := &Logger.MockLogger{}
+	blockCoin.Genesis(validator, "1111", "2222", logger)
+	block := blockCoin.BlockEntity
+	if block.Index != 0 || block.ParentHash != "1111" || block.CurrentHash != "2222" || block.Validator != validator {
+		t.Errorf("The  block Index %d ,  Parent %s  , Current %s  and validator  %v but got  %d_%s_%s_%v", 0, "1111", "2222", validator, block.Index, block.ParentHash, block.CurrentHash, block.Validator)
+	}
+	transactions := blockCoin.Transactions
+	if len(transactions) != 2 {
+		t.Errorf("Genesis Block  Should  Have  2  transactions but  got %d", len(transactions))
+	}
+	bill1 := transactions[0].BillDetails.Bill.To.Address
+	bill2 := transactions[1].BillDetails.Bill.To.Address
+	if bill1 != validator || bill2 != validator {
+		t.Errorf("Genesis Block  Transactions  should  Have  To %v but have  %v %v ", validator, bill1, bill2)
+	}
+	amount1 := transactions[0].Amount
+	amount2 := transactions[1].Amount
+
+	if amount1+amount2 != float64(blockCoin.workers)*blockCoin.perNode {
+		t.Errorf("Genesis should give   %.6f  but give %.6f   ", float64(blockCoin.workers)*blockCoin.perNode, amount1+amount2)
+
+	}
+	fmt.Println("It should  genesis  a general block coin ")
+}
+func TestValidateBlockSucceed(t *testing.T) {
+
+	block := Block{}
+	validator := rsa.PublicKey{}
+	logger := &Logger.MockLogger{}
+	block.Genesis(validator, "1111", "2222", logger)
+
+	block2 := Block{}
+	block2.Genesis(validator, "2222", "3333", logger)
+	block2.Index = 1
+	valid := func(string, string, string) error { return nil }
+	err := block2.ValidateBlock(logger, valid, block)
+	if err != nil {
+		t.Errorf("It  should  not  get err  but  got %s", err.Error())
+	}
+	fmt.Println("It should validate a  valid block")
+}
+func TestValidateInvalidBlockSucceed(t *testing.T) {
+
+	block := Block{}
+	validator := rsa.PublicKey{}
+	logger := &Logger.MockLogger{}
+	block.Genesis(validator, "1111", "2222", logger)
+
+	block2 := Block{}
+	block2.Genesis(validator, "2222", "3333", logger)
+	block2.Index = 1
+	valid := func(string, string, string) error { return errors.New("invalid  puzzle") }
+	err := block2.ValidateBlock(logger, valid, block)
+	if  err == nil {
+		t.Errorf("It  should get err but  got  nothing ")
+	}
+	if err.Error()  != "invalid puzzle" {
+		t.Errorf("It  should  not  get invalid puzzle  err  but  got %s", err.Error())
+	}
+	fmt.Println("It should validate a  valid block")
+}

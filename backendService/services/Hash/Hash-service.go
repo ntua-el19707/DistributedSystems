@@ -1,6 +1,8 @@
-package services
+package Hasher
 
 import (
+	"Logger"
+	"Service"
 	"crypto/sha256"
 	"encoding/binary"
 	"encoding/hex"
@@ -9,22 +11,22 @@ import (
 	"time"
 )
 
-type hashService interface {
-	Service
+type HashService interface {
+	Service.Service
 	Hash(previous, currentHash string) (error, string)
 	Valid(previous, currentHash, expected string) error
 	Seed(currentHash string) (int64, error)
 	ParrentOFall() string
-	instantHash(seed int64) string
+	InstantHash(seed int64) string
 }
-type hashIpmpl struct {
-	loggerService LogerService
+type HashImpl struct {
+	loggerService Logger.LoggerService
 }
 
-func (service *hashIpmpl) construct() error {
+func (service *HashImpl) Construct() error {
 	if service.loggerService == nil {
-		service.loggerService = &Logger{ServiceName: "HasherService"}
-		err := service.loggerService.construct()
+		service.loggerService = &Logger.Logger{ServiceName: "HasherService"}
+		err := service.loggerService.Construct()
 		if err != nil {
 			return err
 		}
@@ -32,7 +34,7 @@ func (service *hashIpmpl) construct() error {
 	service.loggerService.Log("Service  created")
 	return nil
 }
-func (service hashIpmpl) Hash(previous, currentHash string) (error, string) {
+func (service HashImpl) Hash(previous, currentHash string) (error, string) {
 	service.loggerService.Log("Start  hashing next  block")
 	xor, err := performXorString(previous, currentHash, service.loggerService)
 	if err != nil {
@@ -46,7 +48,7 @@ func (service hashIpmpl) Hash(previous, currentHash string) (error, string) {
 	service.loggerService.Log("Commit  hashing next  block")
 	return nil, hashed
 }
-func (service hashIpmpl) Valid(previous, currentHash, expected string) error {
+func (service HashImpl) Valid(previous, currentHash, expected string) error {
 	err, hash := service.Hash(previous, currentHash)
 	if err != nil {
 		return err
@@ -56,7 +58,7 @@ func (service hashIpmpl) Valid(previous, currentHash, expected string) error {
 	}
 	return errors.New("Hashes  do not match")
 }
-func (service hashIpmpl) Seed(hash string) (int64, error) {
+func (service HashImpl) Seed(hash string) (int64, error) {
 	var seed int64
 	bytes := []byte(hash)
 	if len(bytes) >= 8 {
@@ -67,14 +69,14 @@ func (service hashIpmpl) Seed(hash string) (int64, error) {
 	}
 	return seed, nil
 }
-func (service hashIpmpl) ParrentOFall() string {
+func (service HashImpl) ParrentOFall() string {
 	var parent string
 	for i := 0; i < 64; i++ {
 		parent += "1"
 	}
 	return parent
 }
-func (service hashIpmpl) instantHash(seed int64) string {
+func (service HashImpl) InstantHash(seed int64) string {
 	timeInt := time.Now().Unix() + seed
 	hash := hasher(fmt.Sprint(timeInt), 1, service.loggerService)
 	return hash
@@ -82,7 +84,7 @@ func (service hashIpmpl) instantHash(seed int64) string {
 
 //-- USE - FULL
 
-func performXorString(str1, str2 string, loggerService LogerService) (string, error) {
+func performXorString(str1, str2 string, loggerService Logger.LoggerService) (string, error) {
 	loggerService.Log(fmt.Sprintf("Start performing XOR %s ,  %s ", str1, str2))
 	if len(str1) != len(str2) {
 		errmsg := fmt.Sprintf("Abbort performing XOR %s ,  %s string  does not  have  the same size ", str1, str2)
@@ -99,7 +101,7 @@ func performXorString(str1, str2 string, loggerService LogerService) (string, er
 	return strResult, nil
 }
 
-func perfomAndAndGetSum(str1, str2 string, loggerService LogerService) (int, error) {
+func perfomAndAndGetSum(str1, str2 string, loggerService Logger.LoggerService) (int, error) {
 	loggerService.Log(fmt.Sprintf("Start performing and  to get sum %s ,  %s ", str1, str2))
 	if len(str1) != len(str2) {
 		errmsg := fmt.Sprintf("Abbort performing And  to get sum %s ,  %s string  does not  have  the same size ", str1, str2)
@@ -119,7 +121,7 @@ func perfomAndAndGetSum(str1, str2 string, loggerService LogerService) (int, err
 	return sum, nil
 
 }
-func hasher(str string, times int, logger LogerService) string {
+func hasher(str string, times int, logger Logger.LoggerService) string {
 	logger.Log(fmt.Sprintf("Start  loop hasshing for %d", times))
 	hash := sha256.New()
 	hash.Write([]byte(str))
@@ -133,57 +135,57 @@ func hasher(str string, times int, logger LogerService) string {
 }
 
 // -- Mock Hasher --
-type mockHasher struct {
-	hashvalue        string
-	hashFailed       bool
-	invalid          bool
-	seed             int64
-	seedFailed       bool
-	instantHashValue string
-	callHash         int
-	callParentOfAll  int
-	callValid        int
-	callSeed         int
-	callInstand      int
+type MockHasher struct {
+	Hashvalue        string
+	HashFailed       bool
+	Invalid          bool
+	InvalidError     string
+	SeedVal          int64
+	SeedFailed       bool
+	InstantHashValue string
+	CallHash         int
+	CallParentOfAll  int
+	CallValid        int
+	CallSeed         int
+	CallInstand      int
 }
 
-func (m *mockHasher) construct() error {
+func (m *MockHasher) Construct() error {
 
 	return nil
 }
+func (m *MockHasher) Hash(previous, currentHash string) (error, string) {
 
-func (m *mockHasher) Hash(previous, currentHash string) (error, string) {
-
-	m.callHash++
-	if m.hashFailed {
+	m.CallHash++
+	if m.HashFailed {
 		return errors.New("has  faield "), ""
 	}
-	return nil, m.hashvalue
+	return nil, m.Hashvalue
 
 }
 
-func (m *mockHasher) Valid(previous, currentHash, expected string) error {
-	m.callValid++
-	if m.invalid {
-		return errors.New("invalid  block  ")
+func (m *MockHasher) Valid(previous, currentHash, expected string) error {
+	m.CallValid++
+	if m.Invalid {
+		return errors.New(m.InvalidError)
 	}
 	return nil
 }
 
-func (m *mockHasher) Seed(currentHash string) (int64, error) {
-	m.callSeed++
-	if m.seedFailed {
+func (m *MockHasher) Seed(currentHash string) (int64, error) {
+	m.CallSeed++
+	if m.SeedFailed {
 		return 0, errors.New("seed failed ")
 	}
-	return m.seed, nil
+	return m.SeedVal, nil
 }
 
-func (m *mockHasher) ParrentOFall() string {
-	m.callParentOfAll++
+func (m *MockHasher) ParrentOFall() string {
+	m.CallParentOfAll++
 	return "1"
 }
 
-func (m *mockHasher) instantHash(seed int64) string {
-	m.callInstand++
-	return m.instantHashValue
+func (m *MockHasher) InstantHash(seed int64) string {
+	m.CallInstand++
+	return m.InstantHashValue
 }
