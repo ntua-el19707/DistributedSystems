@@ -145,7 +145,7 @@ func (service *StakeCoinBlockChain) distributionOfStake(scaleFactor float64) (ma
 	@Param   scaleFactor  float64
 	@Return  map[rsa.PublicKey] float64 , float64
 */
-func (service StakeCoinBlockChain) MapOfDistibutesRoundUp(scaleFactor float64) (map[rsa.PublicKey]int, int) {
+func (service *StakeCoinBlockChain) MapOfDistibutesRoundUp(scaleFactor float64) (map[rsa.PublicKey]int, int) {
 	logger := service.Services.LoggerService
 	logger.Log("Start MapOfDistibutesRoundUp ")
 
@@ -169,7 +169,7 @@ func (service StakeCoinBlockChain) MapOfDistibutesRoundUp(scaleFactor float64) (
 	GetCurrentHash() -- get block  current  hash    @Service stakeService   @Implementation  stakeCoinBlockChain
 	@Return  string
 */
-func (service StakeCoinBlockChain) GetCurrentHash() string {
+func (service *StakeCoinBlockChain) GetCurrentHash() string {
 	return service.Block.BlockEntity.CurrentHash //  return  hash  of  block
 }
 
@@ -182,6 +182,34 @@ func (service StakeCoinBlockChain) GetCurrentHash() string {
 func (service StakeCoinBlockChain) GetWorkers() []rsa.PublicKey {
 	//*  VERY IMPORTANT Law : all  nodes must have the same  order in service worker and same  list
 	return service.Workers //  return  workers
+}
+
+type StakeMesageBlockChain struct {
+	Block    entitys.BlockMessage
+	Workers  []rsa.PublicKey
+	Services StakeProviders
+}
+
+/*
+*
+
+	construct -- Service  Construct  @Service stakeService   @Implementation  stakeMessageBlockChain
+	@Returns  error
+*/
+func (service *StakeMesageBlockChain) Construct() error {
+	block := service.Block
+	expectedSize := block.BlockEntity.Capicity
+	actualSize := len(block.Transactions)
+	if expectedSize != actualSize {
+		return errors.New(fmt.Sprintf("Block  is  not  full cappicity  is  %d but  has  %d ", expectedSize, actualSize))
+	}
+	serviceName := fmt.Sprintf("StakeBlockMessageService_%s", block.BlockEntity.CurrentHash)
+	err := service.Services.Construct(serviceName)
+	if err != nil {
+		return err
+	}
+	service.Services.LoggerService.Log("Service  created")
+	return nil
 }
 
 type MockStake struct {

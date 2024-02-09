@@ -64,3 +64,52 @@ func (chain *BlockChainCoins) InsertNewBlock(logger Logger.LoggerService, hasher
 	logger.Log("Commit insert a new block in chain")
 	return nil
 }
+func (chain *BlockChainCoins) InsertTransactions(transactions []TransactionCoins) {
+	(*chain)[len(*chain)-1].Transactions = append((*chain)[len(*chain)-1].Transactions, transactions...)
+}
+
+type BlockChainMessage []BlockMessage
+
+/*
+*
+
+	Genesis -  Genesis a  new Chain
+*/
+func (chain *BlockChainMessage) ChainGenesis(logger Logger.LoggerService, hasher Hasher.HashService, Validator rsa.PublicKey, shiftTime int64) {
+	logger.Log("Start  creating a  new  chain -- GENESIS --  ")
+	parent := hasher.ParrentOFall()
+	current := hasher.InstantHash(shiftTime)
+	var empty BlockChainMessage
+	*chain = empty
+	genessisBlock := &BlockMessage{}
+	genessisBlock.Genesis(Validator, parent, current, logger)
+	*chain = append(*chain, *genessisBlock)
+	logger.Log("Commit  creating a  new  chain -- GENESIS --  ")
+}
+func (chain *BlockChainMessage) InsertNewBlock(logger Logger.LoggerService, hasher Hasher.HashService, blockDetails BlockMessage) error {
+	logger.Log("Start insert a new block in chain")
+	size := len(*chain)
+	latest := (*chain)[size-1]
+	capicity := latest.BlockEntity.Capicity
+	hasTransactions := len(latest.Transactions)
+	if capicity != hasTransactions {
+		errmsg := fmt.Sprintf(ErrTransactionListIsNorFullYet, capicity, hasTransactions)
+		logger.Error(fmt.Sprintf("Abbort: %s", errmsg))
+		return errors.New(errmsg)
+	}
+	logger.Log("Start validation of block")
+	err := blockDetails.BlockEntity.ValidateBlock(logger, hasher.Valid, (*chain)[len(*chain)-1].BlockEntity)
+	if err != nil {
+		errmsg := err.Error()
+		logger.Error(fmt.Sprintf("Abbort: Failed validation  due to %s", errmsg))
+		return err
+	}
+	logger.Log("Commit validation of block")
+
+	*chain = append(*chain, blockDetails)
+	logger.Log("Commit insert a new block in chain")
+	return nil
+}
+func (chain *BlockChainMessage) InsertTransactions(transactions []TransactionMsg) {
+	(*chain)[len(*chain)-1].Transactions = append((*chain)[len(*chain)-1].Transactions, transactions...)
+}

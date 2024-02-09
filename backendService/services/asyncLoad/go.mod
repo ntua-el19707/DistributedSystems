@@ -1,4 +1,4 @@
-module github.com/ntua-el19707/DistributedSystems/backendService/services/WalletAndTransactions
+module github.com/ntua-el19707/DistributedSystems/backendService/services/asyncLoad
 
 go 1.21.3
 
@@ -21,6 +21,10 @@ require Generator v0.0.0
 replace RabbitMqService v0.0.0 => ../RabbitMqService
 
 require RabbitMqService v0.0.0
+
+replace WalletAndTransactions v0.0.0 => ../WalletAndTransactions
+
+require WalletAndTransactions v0.0.0
 
 replace FindBalance v0.0.0 => ../FindBalance
 

@@ -1,6 +1,7 @@
 package entitys
 
 import (
+	"Hasher"
 	"Logger"
 	"crypto/rsa"
 	"errors"
@@ -18,9 +19,7 @@ type Block struct {
 	ParentHash  string        `json:"parrent_hash"`
 }
 
-const Capicity int = 5
-
-func (b *Block) Genesis(Validator rsa.PublicKey, Parent, Current string, logger Logger.LoggerService) {
+func (b *Block) Genesis(Validator rsa.PublicKey, Parent, Current string, Capicity int, logger Logger.LoggerService) {
 	b.Index = 0                     //first  block
 	b.CreatedAt = time.Now().Unix() //creation  time  stamp
 	b.Validator = Validator
@@ -29,14 +28,21 @@ func (b *Block) Genesis(Validator rsa.PublicKey, Parent, Current string, logger 
 	b.CurrentHash = Current // later
 	logger.Log(fmt.Sprintf("Created  Genesis Block  %s ", b.CurrentHash))
 }
-func (b *Block) MineBlock(index int, validator rsa.PublicKey, parrent, current string) {
-	b.Index = index                 //first  block
+func (b *Block) MineBlock(validator rsa.PublicKey, previousBlock Block, logger Logger.LoggerService, hasher Hasher.HashService) error {
+	logger.Log("Start Mining a  new  Block ")
+	err, current := hasher.Hash(previousBlock.ParentHash, previousBlock.CurrentHash)
+	if err != nil {
+		logger.Error(err.Error())
+		return err
+	}
+	b.Index = previousBlock.Index + 1
 	b.CreatedAt = time.Now().Unix() //creation  time  stamp
 	b.Validator = validator
-	b.Capicity = Capicity
-	b.ParentHash = parrent
-	b.CurrentHash = current //later
-
+	b.Capicity = previousBlock.Capicity
+	b.ParentHash = previousBlock.CurrentHash
+	b.CurrentHash = current
+	logger.Log("Commit Mining a  new  Block ")
+	return nil
 }
 func (b *Block) ValidateBlock(logger Logger.LoggerService, Valid func(string, string, string) error, previous Block) error {
 	logger.Log(fmt.Sprintf("Start validation  Process  for  block %s to connect  from %s ", b.CurrentHash, previous.CurrentHash))
@@ -76,12 +82,13 @@ type BlockCoinEntity struct {
 */
 func (block *BlockCoinEntity) Genesis(Validator rsa.PublicKey, Parent, Current string, logger Logger.LoggerService) {
 	//Genesis The BlockEnity
-	block.BlockEntity.Genesis(Validator, Parent, Current, logger)
-	if block.perNode == 0 {
+	blockSize := 6
+	block.BlockEntity.Genesis(Validator, Parent, Current, blockSize, logger)
+	/*	if block.perNode == 0 {i
 		block.perNode = 1000.0
-	}
-	workers := block.workers
-	perNode := block.perNode
+	}*/
+	workers := 5             //block.workers
+	perNode := float64(1000) // block.perNode
 	total := float64(workers) * perNode
 	block.Transactions = make([]TransactionCoins, 2)
 	bill := BillingInfo{To: Client{Address: Validator}}
@@ -92,7 +99,9 @@ func (block *BlockCoinEntity) Genesis(Validator rsa.PublicKey, Parent, Current s
 	logger.Log(fmt.Sprintf("Created  Genesis Block Coin   %s  with  The total of  %.6f and  to distribute %.6f ", block.BlockEntity.CurrentHash, total, perNode))
 }
 
-/*
+func (b *BlockCoinEntity) MineBlock(validator rsa.PublicKey, previousBlock Block, logger Logger.LoggerService, hasher Hasher.HashService) error {
+	return b.BlockEntity.MineBlock(validator, previousBlock, logger, hasher)
+} /*
 *
 
 	FindLocaleBalanceOf -  Find The Balanace  of key   in  a Block
@@ -110,4 +119,18 @@ func (blockCoin BlockCoinEntity) FindLocaleBalanceOf(key rsa.PublicKey, sumNotif
 		}
 	}
 	sumNotify <- sum
+}
+
+type BlockMessage struct {
+	BlockEntity  Block            `json:"block"`
+	Transactions []TransactionMsg `json:"transactions"`
+}
+
+func (block *BlockMessage) Genesis(Validator rsa.PublicKey, Parent, Current string, logger Logger.LoggerService) {
+	blockSize := 5
+	block.BlockEntity.Genesis(Validator, Parent, Current, blockSize, logger)
+	logger.Log(fmt.Sprintf("Created  Genesis Block Message  %s", block.BlockEntity.CurrentHash))
+}
+func (b *BlockMessage) MineBlock(validator rsa.PublicKey, previousBlock Block, logger Logger.LoggerService, hasher Hasher.HashService) error {
+	return b.BlockEntity.MineBlock(validator, previousBlock, logger, hasher)
 }

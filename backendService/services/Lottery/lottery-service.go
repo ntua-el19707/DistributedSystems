@@ -14,6 +14,7 @@ import (
 type LotteryService interface {
 	Service.Service
 	Spin(scaleFactor float64) (rsa.PublicKey, error)
+	LoadStakeService(stakeService Stake.StakeService)
 }
 
 type LotteryProviders struct {
@@ -28,10 +29,20 @@ type LotteryImpl struct {
 func (service LotteryImpl) Construct() error {
 	return nil
 }
+func (service *LotteryImpl) LoadStakeService(stakeService Stake.StakeService) {
+	service.Services.StakeService = stakeService
+}
+
 func (service *LotteryImpl) Spin(scaleFactor float64) (rsa.PublicKey, error) {
+
 	hasher := service.Services.HasherService
 	stake := service.Services.StakeService
+	if stake == nil {
+		return rsa.PublicKey{}, errors.New("Stake Service Not  Loaded ")
+	}
+
 	seed, err := hasher.Seed(stake.GetCurrentHash())
+
 	if err != nil {
 		return rsa.PublicKey{}, err
 	}
@@ -51,4 +62,22 @@ func (service *LotteryImpl) Spin(scaleFactor float64) (rsa.PublicKey, error) {
 	}
 	return rsa.PublicKey{}, errors.New("Spin Max  is  bigger  than  that the distributionMap ") // if  stake service corect this  will never  been send
 
+}
+
+type MockLottery struct {
+	SpinError     error
+	SpinRsp       rsa.PublicKey
+	CallSpin      int
+	CallLoadStake int
+}
+
+func (service *MockLottery) Construct() error {
+	return nil
+}
+func (service *MockLottery) LoadStakeService(stakeService Stake.StakeService) {
+	service.CallLoadStake++
+}
+func (service *MockLottery) Spin(scaleFactor float64) (rsa.PublicKey, error) {
+	service.CallSpin++
+	return service.SpinRsp, service.SpinError
 }

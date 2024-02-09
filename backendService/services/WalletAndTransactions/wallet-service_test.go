@@ -121,7 +121,7 @@ func TestWalletService(t *testing.T) {
 			TestShouldSign := func(prefixOld string) {
 				service, _, _ := buildWalletService()
 				tr := &MockTransactionService{}
-				err := service.Sign(tr, rsa.SignPKCS1v15)
+				err := service.Sign(tr)
 
 				if err != nil {
 					t.Errorf("excpeted no err  but  got %v", err)
@@ -142,10 +142,9 @@ func TestWalletService(t *testing.T) {
 					service, _, _ := buildWalletService()
 					tr := &MockTransactionService{}
 					const errorTemplate = "Abbort  error :  Failed  to   getTransaction  due to %s"
-
 					errSet := errors.New("Failed to Get transaction")
 					tr.ErrorGet = errSet
-					err := service.Sign(tr, rsa.SignPKCS1v15)
+					err := service.Sign(tr)
 					errMsg := fmt.Sprintf(errorTemplate, errSet.Error())
 
 					if err.Error() != errMsg {
@@ -161,14 +160,24 @@ func TestWalletService(t *testing.T) {
 					fmt.Printf("%s it should fail  to sign  a transaction fue to ('failed to get Transaction')\n", prefixOld)
 				}
 				TestShouldFailToSignMethod := func(prefixOld string) {
-					service, _, _ := buildWalletService()
+					mockLogger := &Logger.MockLogger{}
+
+					service := &WalletStructV1Implementation{LoggerService: mockLogger}
+					err := service.Construct()
+					if err != nil {
+						t.Errorf("Expected no err but  got %v", err)
+					}
 					tr := &MockTransactionService{}
 					const errorTemplate = "Abbort  error :  Failed  to   SignTransaction  due to %s"
 					errSet := errors.New("Failed to Sign")
 					errRsaSign := func(random io.Reader, priv *rsa.PrivateKey, hash crypto.Hash, msg []byte) ([]byte, error) {
 						return []byte{}, errSet
 					}
-					err := service.Sign(tr, errRsaSign)
+					defer func() {
+						service.signMethod = rsa.SignPKCS1v15
+					}()
+					service.signMethod = errRsaSign
+					err = service.Sign(tr)
 					errMsg := fmt.Sprintf(errorTemplate, errSet.Error())
 
 					if err.Error() != errMsg {

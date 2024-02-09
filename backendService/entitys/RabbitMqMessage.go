@@ -9,6 +9,7 @@ type TransactionMessageSet struct {
 	TransactionCoin    TransactionCoinSet       `json:"transaction_money"`
 	TransactionMessage TransactionMsgEntityRoot `json:"transaction_message"`
 }
-type BlockCoinMessage struct {
-	Index int `json:"index"`
+type BlockCoinMessageRabbitMq struct {
+	BlockCoin BlockCoinEntity `json:"block"`
+	//TODO ?  may sign the  block Signiture []byte          `json:"signiture"`
 }

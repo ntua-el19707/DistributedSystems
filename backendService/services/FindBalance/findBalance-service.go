@@ -1,4 +1,4 @@
-package WalletAndTransactions
+package FindBalance
 
 import (
 	"Logger"
@@ -16,9 +16,8 @@ type BalanceService interface {
 }
 
 type BalanceImplementation struct {
-	mu                    sync.Mutex
-	WalletServiceInstance WalletService
-	LoggerService         Logger.LoggerService
+	mu            sync.Mutex
+	LoggerService Logger.LoggerService
 }
 
 func (balance *BalanceImplementation) Construct() error {
@@ -46,28 +45,28 @@ func (balance *BalanceImplementation) UnLockBalance() {
 }
 
 // Mocks
-// mockFindBalance
-type mockFindBalance struct {
-	amount                 float64
-	err                    error
-	findBalanceCalledTimes int
-	locked                 bool
-	lockedCall             int
-	unlockedCall           int
+// MockFindBalance
+type MockFindBalance struct {
+	Amount                 float64
+	Err                    error
+	FindBalanceCalledTimes int
+	Locked                 bool
+	LockedCall             int
+	UnlockedCall           int
 }
 
-func (balance *mockFindBalance) Construct() error {
+func (balance *MockFindBalance) Construct() error {
 	return nil
 }
-func (balance *mockFindBalance) FindBalance(sender rsa.PublicKey) (float64, error) {
-	balance.findBalanceCalledTimes++
-	return balance.amount, balance.err
+func (balance *MockFindBalance) FindBalance(sender rsa.PublicKey) (float64, error) {
+	balance.FindBalanceCalledTimes++
+	return balance.Amount, balance.Err
 }
-func (balance *mockFindBalance) LockBalance() {
-	balance.locked = true
-	balance.lockedCall++
+func (balance *MockFindBalance) LockBalance() {
+	balance.Locked = true
+	balance.LockedCall++
 }
-func (balance *mockFindBalance) UnLockBalance() {
-	balance.locked = false
-	balance.unlockedCall++
+func (balance *MockFindBalance) UnLockBalance() {
+	balance.Locked = false
+	balance.UnlockedCall++
 }

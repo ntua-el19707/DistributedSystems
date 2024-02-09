@@ -1,6 +1,7 @@
 package WalletAndTransactions
 
 import (
+	"FindBalance"
 	"Generator"
 	"Logger"
 	"Service"
@@ -15,6 +16,7 @@ import (
 
 type TransactionService interface {
 	Service.Service
+	semiConstruct() error
 	CreateTransaction() error
 	VerifySignature() error
 	setSign(signiture []byte)
@@ -26,7 +28,7 @@ type TransactionService interface {
 type TransactionsStandard struct {
 	ServiceName            string
 	LoggerService          Logger.LoggerService
-	BalanceServiceInstance BalanceService
+	BalanceServiceInstance FindBalance.BalanceService
 	GeneratorService       Generator.GeneratorService
 	WalletService          WalletService
 	jsonStringfy           func(entitys.TransactionRecord) ([]byte, error)
@@ -115,6 +117,36 @@ func (transaction *TransactionCoins) Construct() error {
 	LoggerService.Log(createdMessage)
 	return nil
 }
+func (t *TransactionsStandard) semiConstruct(id string) error {
+	var err error
+	if t.LoggerService == nil {
+
+		t.ServiceName = fmt.Sprintf("%s_%s", t.ServiceName, id)
+		t.LoggerService = &Logger.Logger{ServiceName: t.ServiceName}
+		err = t.LoggerService.Construct()
+		if err != nil {
+			return err
+		}
+	}
+	/*	logger := t.LoggerService
+		logger.Log("Start checking  Services ")
+		err = t.valid()
+		if err != nil {
+			errmsg := fmt.Sprintf("Abbort   Services not  valid %s", err.Error())
+			logger.Error(errmsg)
+			return errors.New(logger.SprintErrorf(errmsg))
+		}*/
+	t.jsonStringfy = entitys.JsonStringfy
+	t.verifyMethod = rsa.VerifyPKCS1v15
+	return nil
+}
+
+// only if  use  verifyTransaction
+func (transaction *TransactionCoins) semiConstruct() error {
+	return transaction.Services.semiConstruct(transaction.Transaction.Transaction.BillDetails.Transaction_id)
+}
+
+const ErrRequestFaildDueTotalMoneyFroze string = "Request To  sent %.3f from %.3f balance Failed  due to total Money Froze(for wallet  ) %.3f\n"
 
 /*
 *
@@ -149,7 +181,12 @@ func (t *TransactionCoins) CreateTransaction() error {
 	//wallet will have  balance -frozenMoney coins  that
 	//trnsction  is  not yet  added  in chain
 	//Be  optimist and  froze  the  coins
-	Services.WalletService.Freeze(amount)
+	err = Services.WalletService.Freeze(amount)
+	if err != nil {
+		logger.Error(err.Error())
+		return err
+	}
+
 	//find  balance
 	balance, err := Services.BalanceServiceInstance.FindBalance(sender)
 	if err != nil {
@@ -160,12 +197,12 @@ func (t *TransactionCoins) CreateTransaction() error {
 	}
 	frozenMoney := Services.WalletService.GetFreeze()
 	if balance-frozenMoney < 0 {
-		message := fmt.Sprintf("Request To  sent  %.3f  from  %.3f  balance Failed  due to total Money Froze(for wallet  ) %.3f\n", amount, balance, frozenMoney)
+		message := fmt.Sprintf(ErrRequestFaildDueTotalMoneyFroze, amount, balance, frozenMoney)
 		// not  valid  trancation the total
 		Services.BalanceServiceInstance.UnLockBalance()
 		Services.WalletService.UnFreeze(amount)
-
-		return errors.New(logger.SprintErrorf(message))
+		logger.Error(message)
+		return errors.New(message)
 
 	}
 	logger.Log(fmt.Sprintf("Commit creating  Transaction %s", transactionDetails))
@@ -216,6 +253,7 @@ func (t TransactionCoins) VerifySignature() error {
 	verify := func(transaction []byte) error {
 		PublicKey := t.Transaction.Transaction.BillDetails.Bill.From.Address
 		hashed := sha256.Sum256(transaction)
+		logger.Log(fmt.Sprintf("%v", PublicKey))
 
 		//err := rsa.VerifyPKCS1v15(&PublicKey, crypto.SHA256, hashed[:], t.GetSigniture())
 		err := t.Services.verifyMethod(&PublicKey, crypto.SHA256, hashed[:], t.GetSigniture())
@@ -267,11 +305,14 @@ func (transaction *TransactionMsg) Construct() error {
 	LoggerService.Log(createdMessage)
 	return nil
 }
+func (transaction *TransactionMsg) semiConstruct() error {
+	return transaction.Services.semiConstruct(transaction.Transaction.Transaction.BillDetails.Transaction_id)
+}
 
 /*
 *
 
-	CreateTransaction -  create  a  transaction
+	CreateTransaction -  create		 a  transaction
 	@Returns  error
 */
 func (t *TransactionMsg) CreateTransaction() error {
@@ -382,6 +423,10 @@ func (service *MockTransactionService) Construct() error {
 	service.CallConstruct++
 	return service.ConstructErr
 }
+func (service *MockTransactionService) semiConstruct() error {
+	return nil
+}
+
 func (service *MockTransactionService) CreateTransaction() error {
 	service.CallCreateTransaction++
 	return service.CreateTransactionErr

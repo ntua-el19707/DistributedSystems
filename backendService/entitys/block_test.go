@@ -1,6 +1,7 @@
 package entitys
 
 import (
+	"Hasher"
 	"Logger"
 	"crypto/rand"
 	"crypto/rsa"
@@ -13,12 +14,17 @@ import (
 const prefix = "----"
 
 func TestBlock(t *testing.T) {
+	expectorNoErr := func(t *testing.T, prefix string, err error) {
+		if err != nil {
+			t.Errorf("%s  Expected  no err  but got %v err ", prefix, err)
+		}
+	}
 	fmt.Println("Test  For  Block ")
 	TestGenesisBlock := func(t *testing.T, prefix string) {
 		block := Block{}
 		validator := rsa.PublicKey{}
 		logger := &Logger.MockLogger{}
-		block.Genesis(validator, "1111", "2222", logger)
+		block.Genesis(validator, "1111", "2222", 6, logger)
 		if block.Index != 0 || block.ParentHash != "1111" || block.CurrentHash != "2222" || block.Validator != validator {
 			t.Errorf("The  block Index %d ,  Parent %s  , Current %s  and validator  %v but got  %d_%s_%s_%v", 0, "1111", "2222", validator, block.Index, block.ParentHash, block.CurrentHash, block.Validator)
 		}
@@ -32,10 +38,10 @@ func TestBlock(t *testing.T) {
 			block := Block{}
 			validator := rsa.PublicKey{}
 			logger := &Logger.MockLogger{}
-			block.Genesis(validator, "1111", "2222", logger)
+			block.Genesis(validator, "1111", "2222", 6, logger)
 
 			block2 := Block{}
-			block2.Genesis(validator, "2222", "3333", logger)
+			block2.Genesis(validator, "2222", "3333", 6, logger)
 			block2.Index = 1
 			valid := func(string, string, string) error { return nil }
 			err := block2.ValidateBlock(logger, valid, block)
@@ -49,10 +55,10 @@ func TestBlock(t *testing.T) {
 			block := Block{}
 			validator := rsa.PublicKey{}
 			logger := &Logger.MockLogger{}
-			block.Genesis(validator, "1111", "2222", logger)
+			block.Genesis(validator, "1111", "2222", 6, logger)
 
 			block2 := Block{}
-			block2.Genesis(validator, "2222", "3333", logger)
+			block2.Genesis(validator, "2222", "3333", 6, logger)
 			block2.Index = 1
 			const errmsg string = "invalid puzzle"
 			valid := func(string, string, string) error { return errors.New(errmsg) }
@@ -70,10 +76,10 @@ func TestBlock(t *testing.T) {
 			block := Block{}
 			validator := rsa.PublicKey{}
 			logger := &Logger.MockLogger{}
-			block.Genesis(validator, "1111", "2222", logger)
+			block.Genesis(validator, "1111", "2222", 6, logger)
 
 			block2 := Block{}
-			block2.Genesis(validator, "2222", "3333", logger)
+			block2.Genesis(validator, "2222", "3333", 6, logger)
 			block2.Index = 3
 			const errmsg string = "has  not  correct indexing"
 			valid := func(string, string, string) error { return nil }
@@ -91,10 +97,10 @@ func TestBlock(t *testing.T) {
 			block := Block{}
 			validator := rsa.PublicKey{}
 			logger := &Logger.MockLogger{}
-			block.Genesis(validator, "1111", "2222", logger)
+			block.Genesis(validator, "1111", "2222", 6, logger)
 
 			block2 := Block{}
-			block2.Genesis(validator, "1111", "3333", logger)
+			block2.Genesis(validator, "1111", "3333", 6, logger)
 			block2.Index = 2
 			const errmsg string = "Parent  hash does  not match it previous  currentHash"
 			valid := func(string, string, string) error { return nil }
@@ -112,10 +118,18 @@ func TestBlock(t *testing.T) {
 	TestMineBlock := func(t *testing.T, prefixOld string) {
 
 		block := Block{}
+		block.Index = 1
 		validator := rsa.PublicKey{}
-		block.MineBlock(2, validator, "1111", "2222")
-		if block.Index != 2 || block.ParentHash != "1111" || block.CurrentHash != "2222" || block.Validator != validator {
-			t.Errorf("The  block Index %d ,  Parent %s  , Current %s  and validator  %v but got  %d_%s_%s_%v", 2, "1111", "2222", validator, block.Index, block.ParentHash, block.CurrentHash, block.Validator)
+		blockP := Block{}
+		block.CurrentHash = "1111"
+		hash := Hasher.MockHasher{}
+		hash.Hashvalue = "2222"
+
+		err := blockP.MineBlock(validator, block, &Logger.MockLogger{}, &hash)
+
+		expectorNoErr(t, prefixOld, err)
+		if blockP.Index != 2 || blockP.ParentHash != "1111" || blockP.CurrentHash != "2222" || blockP.Validator != validator {
+			t.Errorf("The  block Index %d ,  Parent %s  , Current %s  and validator  %v but got  %d_%s_%s_%v", 2, "1111", "2222", validator, blockP.Index, blockP.ParentHash, blockP.CurrentHash, blockP.Validator)
 		}
 		fmt.Printf("%sIt should Mine  a  block\n", prefixOld)
 	}

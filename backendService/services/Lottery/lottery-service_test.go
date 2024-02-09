@@ -6,6 +6,7 @@ import (
 	"Stake"
 	"crypto/rand"
 	"crypto/rsa"
+	"errors"
 	"fmt"
 	"testing"
 )
@@ -116,13 +117,45 @@ func TestSpinService(t *testing.T) {
 				fmt.Printf("%s it should spin correctly 1st  test \n", prefixOld)
 
 			}
+			TestFail := func(prefixOld string) {
+				mockLogger := &Logger.MockLogger{}
+				hash := &Hasher.MockHasher{}
+				service := &LotteryImpl{Services: LotteryProviders{LoggerService: mockLogger, HasherService: hash}}
+				err := service.Construct()
+				if err != nil {
+					t.Errorf("Expected to get no err  but  got %v", err)
+				}
+				_, err = service.Spin(0.0)
+				exp := errors.New("Stake Service Not  Loaded ")
+				if err.Error() != exp.Error() {
+					t.Errorf("Expected to get %s but  got %s", exp.Error(), err.Error())
+				}
+				fmt.Printf("%s it should fail to  spin no 'stake-service' \n", prefixOld)
+			}
 			TestSpin1(prefixNew)
 			TestSpin2(prefixNew)
 			TestSpin3(prefixNew)
+			TestFail(prefixNew)
+		}
+		TestLoadProvider := func(prefixOld string) {
+			mockLogger := &Logger.MockLogger{}
+			hash := &Hasher.MockHasher{}
+			stake := &Stake.MockStake{}
+			service := &LotteryImpl{Services: LotteryProviders{LoggerService: mockLogger, HasherService: hash}}
+			err := service.Construct()
+			if err != nil {
+				t.Errorf("Expected to get no err  but  got %v", err)
+			}
+			service.LoadStakeService(stake)
+			if service.Services.StakeService != stake {
+				t.Errorf("Expected to load stake service  but failed ")
+			}
+			fmt.Printf("%s  it should  load  stake-service\n", prefixOld)
 
 		}
 		TestCreationService(prefixNew)
 		TestSpins(prefixNew)
+		TestLoadProvider(prefixNew)
 	}
 	TestLotteryImpl(prefix)
 

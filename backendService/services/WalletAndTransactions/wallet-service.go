@@ -25,9 +25,9 @@ type WalletService interface {
 	Service.Service
 	// will  generate  a wallet
 	GenerateWallet(size int, method func(io.Reader, int) (*rsa.PrivateKey, error)) error
-	Sign(transaction TransactionService, method func(io.Reader, *rsa.PrivateKey, crypto.Hash, []byte) ([]byte, error)) error
+	Sign(transaction TransactionService) error
 	GetPub() rsa.PublicKey
-	Freeze(coins float64) error //TODO consider throw err  if coins < 0
+	Freeze(coins float64) error
 	UnFreeze(coins float64) error
 	GetFreeze() float64
 }
@@ -39,11 +39,13 @@ type WalletService interface {
   @Param privateKey  rsa.PrivateKey
 */
 type WalletStructV1Implementation struct {
-	PublicKey     rsa.PublicKey
-	privateKey    *rsa.PrivateKey
-	frozen        float64
-	mu            sync.Mutex
-	LoggerService Logger.LoggerService
+	PublicKey          rsa.PublicKey
+	privateKey         *rsa.PrivateKey
+	frozen             float64
+	mu                 sync.Mutex
+	happenConstruction bool
+	signMethod         func(io.Reader, *rsa.PrivateKey, crypto.Hash, []byte) ([]byte, error)
+	LoggerService      Logger.LoggerService
 }
 
 /*
@@ -72,6 +74,8 @@ func (wallet *WalletStructV1Implementation) privateConstructor(generateMethod fu
 		logger.Error("Abbort Construction of  a new wallet")
 		return err
 	}
+	wallet.signMethod = rsa.SignPKCS1v15
+	wallet.happenConstruction = true // TODO later and a valid  in wallet service
 	logger.Log("Commit Construction of  a new wallet")
 	return nil
 	// ? Note  for  thought  if i save  the  keys in  phisicall storage
@@ -113,7 +117,7 @@ func (wallet *WalletStructV1Implementation) GenerateWallet(size int, GenerateMet
 	@Param  trasactionService
 	@Return error
 */
-func (wallet *WalletStructV1Implementation) Sign(transactionService TransactionService, SignMethod func(io.Reader, *rsa.PrivateKey, crypto.Hash, []byte) ([]byte, error)) error {
+func (wallet *WalletStructV1Implementation) Sign(transactionService TransactionService) error {
 	logger := wallet.LoggerService
 	logger.Log("Start  Sign  transaction")
 	//define  SignTransaction
@@ -121,7 +125,7 @@ func (wallet *WalletStructV1Implementation) Sign(transactionService TransactionS
 		// hashed  transaction
 		hashed := sha256.Sum256(transaction)
 		// Sign  hashed transaction
-		Signature, err := SignMethod(rand.Reader, wallet.privateKey, crypto.SHA256, hashed[:])
+		Signature, err := wallet.signMethod(rand.Reader, wallet.privateKey, crypto.SHA256, hashed[:])
 
 		if err != nil {
 			return nil, err
@@ -262,6 +266,7 @@ type MockWallet struct {
 	CounterUnFreeze        int
 	CounterGetFreeze       int
 	Frozen                 float64
+	MockPublicKey          rsa.PublicKey
 }
 
 func (mock *MockWallet) Construct() error {
@@ -271,13 +276,13 @@ func (mock *MockWallet) GenerateWallet(size int, method func(io.Reader, int) (*r
 	mock.CounterGeneratorWallet++
 	return mock.ErrorGenerateWallet
 }
-func (mock *MockWallet) Sign(transation TransactionService, method func(io.Reader, *rsa.PrivateKey, crypto.Hash, []byte) ([]byte, error)) error {
+func (mock *MockWallet) Sign(transation TransactionService) error {
 	mock.CounterSign++
 	return mock.ErrorSignWallet
 }
 func (mock *MockWallet) GetPub() rsa.PublicKey {
 	mock.CounterGetPub++
-	return rsa.PublicKey{}
+	return mock.MockPublicKey
 }
 func (mock *MockWallet) Freeze(coins float64) error {
 
