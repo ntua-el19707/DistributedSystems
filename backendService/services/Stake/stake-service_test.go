@@ -9,6 +9,17 @@ import (
 	"testing"
 )
 
+func callExpector[T comparable](obj1, obj2 T, t *testing.T, prefix, what string) {
+	if obj1 != obj2 {
+		t.Errorf("%s  Expected  '%s' to get %v but %v ", prefix, what, obj1, obj2)
+	}
+}
+func expectorNoErr(t *testing.T, err error, prefixOld string) {
+	if err != nil {
+		t.Errorf("%s Expect no Err  but  got %v", prefixOld, err)
+	}
+}
+
 /*
 *
 
@@ -243,5 +254,165 @@ func TestServiceStake(t *testing.T) {
 
 		}(prefixNew)
 	}
+	TestForStakeMsg := func(prefixOld string) {
+		fmt.Printf("%s  Test for  stake  msg  implenatetion\n ", prefixOld)
+		prefixNew := fmt.Sprintf("%s%s", prefixOld, prefix)
+
+		TestCreateService := func(prefixOld string) {
+			fmt.Printf("%s  Test for  stake  msg  create service \n ", prefixOld)
+			prefixNew := fmt.Sprintf("%s%s", prefixOld, prefix)
+			itShouldCreate := func(prefixOld string) {
+				mockLogger := &Logger.MockLogger{}
+				impl := &StakeMesageBlockChain{Services: StakeProviders{LoggerService: mockLogger}}
+				err := impl.Construct()
+				expectorNoErr(t, err, prefixOld)
+				fmt.Printf("%s it should create  service\n", prefixOld)
+			}
+			itShouldFailToCreate := func(prefixOld string) {
+
+				mockLogger := &Logger.MockLogger{}
+				impl := &StakeCoinBlockChain{Services: StakeProviders{LoggerService: mockLogger}}
+				impl.Block.BlockEntity.Capicity = 1
+				err := impl.Construct()
+				const expected string = "Block  is  not  full cappicity  is  1 but  has  0 "
+				callExpector[string](expected, err.Error(), t, prefixOld, "error")
+				fmt.Printf("%s it should fail to  create  service not  full block \n", prefixOld)
+
+			}
+			itShouldCreate(prefixNew)
+			itShouldFailToCreate(prefixNew)
+		}
+		Testdistibution := func(prefixOld string) {
+
+			fmt.Printf("%s  Test  For  Service distibutionMap  \n", prefixOld)
+			prefixNew := fmt.Sprintf("%s%s", prefixOld, prefix)
+			TestDistributionScale0 := func(prefixOld string) {
+				mockLogger := &Logger.MockLogger{}
+				impl := &StakeMesageBlockChain{Services: StakeProviders{LoggerService: mockLogger}}
+				impl.Workers, _ = keyGen(2)
+				impl.Block.BlockEntity.Capicity = 5
+
+				billDetails1 := entitys.TransactionDetails{}
+				billDetails2 := entitys.TransactionDetails{}
+				billDetails1.Bill.From.Address = impl.Workers[0]
+				billDetails1.Bill.To.Address = impl.Workers[1]
+
+				billDetails2.Bill.To.Address = impl.Workers[0]
+				billDetails2.Bill.From.Address = impl.Workers[1]
+
+				transactions := []entitys.TransactionMsg{entitys.TransactionMsg{BillDetails: billDetails1, Msg: "hello"}, entitys.TransactionMsg{BillDetails: billDetails1, Msg: "world"}, entitys.TransactionMsg{BillDetails: billDetails1, Msg: "bannana"}, entitys.TransactionMsg{BillDetails: billDetails2, Msg: "apples"}, entitys.TransactionMsg{BillDetails: billDetails2, Msg: "oranges"}}
+				impl.Block.Transactions = transactions
+				err := impl.Construct()
+				expectorNoErr(t, err, prefixOld)
+				dMap, total := impl.distributionOfStake(0)
+				if dMap[impl.Workers[0]] != 17.0 || dMap[impl.Workers[1]] != 13 || total != 30 {
+					t.Errorf("Expected worker0:%3f worker1:%3f , total %3f but  got  worker0:%3f worker1:%3f , total %3f ", 17.0, 13.0, 30.0, dMap[impl.Workers[0]], dMap[impl.Workers[1]], total)
+				}
+				fmt.Printf("%s it  should  create distibution of scale  0   56.67/100,  43.33/100 distibutionMap\n", prefixOld)
+			}
+			TestDistributionScale1AndAHalf := func(prefixOld string) {
+				mockLogger := &Logger.MockLogger{}
+				impl := &StakeMesageBlockChain{Services: StakeProviders{LoggerService: mockLogger}}
+				impl.Workers, _ = keyGen(2)
+				impl.Block.BlockEntity.Capicity = 5
+
+				billDetails1 := entitys.TransactionDetails{}
+				billDetails2 := entitys.TransactionDetails{}
+				billDetails1.Bill.From.Address = impl.Workers[0]
+				billDetails1.Bill.To.Address = impl.Workers[1]
+
+				billDetails2.Bill.To.Address = impl.Workers[0]
+				billDetails2.Bill.From.Address = impl.Workers[1]
+
+				transactions := []entitys.TransactionMsg{entitys.TransactionMsg{BillDetails: billDetails1, Msg: "hello"}, entitys.TransactionMsg{BillDetails: billDetails1, Msg: "world"}, entitys.TransactionMsg{BillDetails: billDetails1, Msg: "bannana"}, entitys.TransactionMsg{BillDetails: billDetails2, Msg: "apples"}, entitys.TransactionMsg{BillDetails: billDetails2, Msg: "oranges"}}
+				impl.Block.Transactions = transactions
+				err := impl.Construct()
+				expectorNoErr(t, err, prefixOld)
+				dMap, total := impl.distributionOfStake(1.5)
+				if dMap[impl.Workers[0]] != 36.5 || dMap[impl.Workers[1]] != 38.5 || total != 75 {
+					t.Errorf("Expected worker0:%3f worker1:%3f , total %3f but  got  worker0:%3f worker1:%3f , total %3f ", 36.5, 38.5, 75.0, dMap[impl.Workers[0]], dMap[impl.Workers[1]], total)
+				}
+				fmt.Printf("%s it  should  create distibution of scale  0   48.67/100,  51.33/100 distibutionMap\n", prefixOld)
+			}
+			TestDistributionScale0(prefixNew)
+			TestDistributionScale1AndAHalf(prefixNew)
+
+		}
+		func(prefixOld string) {
+			fmt.Printf("%s  Test  For  Service distibutionMapRoundUp \n", prefixOld)
+			prefixNew := fmt.Sprintf("%s%s", prefixOld, prefix)
+			TestDistributionScale1AndAHalf := func(prefixOld string) {
+				mockLogger := &Logger.MockLogger{}
+				impl := &StakeMesageBlockChain{Services: StakeProviders{LoggerService: mockLogger}}
+				impl.Workers, _ = keyGen(2)
+				impl.Block.BlockEntity.Capicity = 5
+
+				billDetails1 := entitys.TransactionDetails{}
+				billDetails2 := entitys.TransactionDetails{}
+				billDetails1.Bill.From.Address = impl.Workers[0]
+				billDetails1.Bill.To.Address = impl.Workers[1]
+
+				billDetails2.Bill.To.Address = impl.Workers[0]
+				billDetails2.Bill.From.Address = impl.Workers[1]
+
+				transactions := []entitys.TransactionMsg{entitys.TransactionMsg{BillDetails: billDetails1, Msg: "hello"}, entitys.TransactionMsg{BillDetails: billDetails1, Msg: "world"}, entitys.TransactionMsg{BillDetails: billDetails1, Msg: "bannanas"}, entitys.TransactionMsg{BillDetails: billDetails2, Msg: "apples"}, entitys.TransactionMsg{BillDetails: billDetails2, Msg: "oranges"}}
+				impl.Block.Transactions = transactions
+				err := impl.Construct()
+				expectorNoErr(t, err, prefixOld)
+				dMap, total := impl.MapOfDistibutesRoundUp(1.5)
+				if dMap[impl.Workers[0]] != 48387 || dMap[impl.Workers[1]] != 51612 || total != 99999 {
+					t.Errorf("Expected worker0:%d worker1:%d , total %d but  got  worker0:%d worker1:%d , total %d ", 48387, 51612, 99999, dMap[impl.Workers[0]], dMap[impl.Workers[1]], total)
+				}
+				fmt.Printf("%s it  should  create distibution of scale  0   48.387/100,  51.612/100 distibutionMap\n", prefixOld)
+			}
+			TestDistributionScale1AndAHalf(prefixNew)
+
+		}(prefixNew)
+		TestCreateService(prefixNew)
+		Testdistibution(prefixNew)
+		func(prefixOld string) {
+			fmt.Printf("%s  Test  For  Get Current Hash  \n", prefixOld)
+			prefixNew := fmt.Sprintf("%s%s", prefixOld, prefix)
+			GetCurrentHash := func(prefixOld string) {
+
+				mockLogger := &Logger.MockLogger{}
+				impl := &StakeMesageBlockChain{Services: StakeProviders{LoggerService: mockLogger}}
+				err := impl.Construct()
+				if err != nil {
+					t.Errorf("Expected to  not  get  err  but  got  %v", err)
+				}
+				impl.Block.BlockEntity.CurrentHash = "aa"
+				actual := impl.GetCurrentHash()
+				if actual != "aa" {
+					t.Errorf("Expected to  not  get  'aa' but  got  '%s'", actual)
+				}
+
+				fmt.Printf("%s it should  get  correct  hash aa\n", prefixOld)
+
+			}
+
+			GetCurrentHash2 := func(prefixOld string) {
+
+				mockLogger := &Logger.MockLogger{}
+				impl := &StakeMesageBlockChain{Services: StakeProviders{LoggerService: mockLogger}}
+				err := impl.Construct()
+				if err != nil {
+					t.Errorf("Expected to  not  get  err  but  got  %v", err)
+				}
+				impl.Block.BlockEntity.CurrentHash = "bb"
+				actual := impl.GetCurrentHash()
+				if actual != "bb" {
+					t.Errorf("Expected to  not  get  'bb' but  got  '%s'", actual)
+				}
+
+				fmt.Printf("%s it  should  get  correct  hash bb\n", prefixOld)
+
+			}
+			GetCurrentHash(prefixNew)
+			GetCurrentHash2(prefixNew)
+		}(prefixNew)
+	}
+
+	TestForStakeMsg(prefix)
 	TestForStakeCoins(prefix)
 }

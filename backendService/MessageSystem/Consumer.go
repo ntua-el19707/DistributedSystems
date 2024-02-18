@@ -12,6 +12,29 @@ type ConsumerMsgResp[T interface{}] struct {
 	Err     error
 }
 
+func CreateAndBind(RABBITMQ, QUEUE, EXCHANGE string, logger Logger.LoggerService) error {
+	whatToDo := fmt.Sprintf("create and  bind queue %s to topic %s", QUEUE, EXCHANGE)
+
+	logger.Log(fmt.Sprintf("start %s", whatToDo))
+	conn, channel, err := connectionMakerBroadcast(RABBITMQ, EXCHANGE, logger)
+	if err != nil {
+		logger.Error(fmt.Sprintf("abbort %s due  to %s ", whatToDo, err.Error()))
+		return err
+	}
+
+	defer conn.Close()
+	defer channel.Close()
+	err = CreateAndBindQueue(channel, QUEUE, EXCHANGE, logger)
+	if err != nil {
+		logger.Error(fmt.Sprintf("abbort %s due  to %s ", whatToDo, err.Error()))
+		return err
+	}
+
+	logger.Log(fmt.Sprintf("commit %s", whatToDo))
+	return nil
+
+}
+
 /*
   - Cunsumer - Create  a consumer for T type messages
     @generic T - interface{}{}
@@ -70,4 +93,54 @@ func Consumer[T interface{}](messageBus chan ConsumerMsgResp[T], RABBITMQ, QUEUE
 		}
 		msg.Ack(false)
 	}
+}
+
+/*
+  - CunsumeOne - Create  a consumer for T type messages
+    @generic T - interface{}{}
+    @Param RABBITMQ string
+    @Param QUEUE  string
+    @Param  logger Logger.LoggerService
+    @Returns T ,error
+*/
+func ConsumeOne[T interface{}](RABBITMQ, QUEUE string, logger Logger.LoggerService) (T, error) {
+	logger.Log("Start  Consuming")
+	var Payload T // Zero val
+	conn, channel, err := connectionMaker(RABBITMQ, logger)
+	if err != nil {
+		logger.Error("Abbort  Consuming")
+		return Payload, err
+	}
+	defer conn.Close()
+	defer channel.Close()
+	msgs, err := channel.Consume(
+		QUEUE, // Queue name
+		"",    // Consumer
+		false, // Auto-Acknowledge set to false
+		true,  // Exclusive (set to true to ensure only one consumer at a time)
+		false, // No-local
+		false, // No-Wait
+		nil,   // Arguments
+	)
+	if err != nil {
+		errMsg := fmt.Sprintf(errFailedToRegisterConsumer, err.Error())
+		logger.Error(fmt.Sprintf("Abbort  Consuming due to :%s ", errMsg))
+		err = errors.New(errMsg)
+		return Payload, err
+	}
+	var errReturn error
+	for msg := range msgs {
+		err := json.Unmarshal(msg.Body, &Payload)
+		if err != nil {
+			errMsg := fmt.Sprintf("Failed  to unmarshal json due %s", err.Error())
+			logger.Error(errMsg)
+			errReturn = err
+		} else {
+			logger.Log("Received  Message")
+		}
+		msg.Ack(false)
+		break
+	}
+	return Payload, errReturn
+
 }

@@ -396,5 +396,174 @@ func TestChain(t *testing.T) {
 		testGenesis(prefixNew)
 		testInsertBlock(prefixNew)
 	}
+	TestBlockMsg := func(prefixOld string) {
+
+		SenderToPair := func(from, to rsa.PublicKey) TransactionDetails {
+			return TransactionDetails{Bill: BillingInfo{From: Client{Address: from}, To: Client{Address: to}}}
+		}
+		prefixNew := fmt.Sprintf("%s%s", prefixOld, prefix)
+		fmt.Printf("%s Test  Cases for block chain msg implemetation \n", prefixOld)
+		TestGenesis := func(prefixOld string) {
+			prefixNew := fmt.Sprintf("%s%s", prefixOld, prefix)
+			fmt.Printf("%s Test  For  Genesis \n", prefixOld)
+			itShouldGenesis := func(prefixOld string) {
+				var chain BlockChainMessage
+
+				logger := &Logger.MockLogger{}
+				hasher := &Hasher.MockHasher{InstantHashValue: "123456"}
+				chain.ChainGenesis(logger, hasher, validators[0], 0)
+				callExpector[int](1, len(chain), t, prefixOld, "size  of  chain ")
+				callExpector[int](1, hasher.CallParentOfAll, t, prefixOld, "call  hash.ParrnetOfall")
+				callExpector[int](1, hasher.CallInstand, t, prefixOld, "call hash.InstantHash ")
+				fmt.Printf("%s  it should  Genesis \n", prefixOld)
+
+			}
+			itShouldGenesis(prefixNew)
+
+		}
+		TestInsertBlock := func(prefixOld string) {
+
+			AtoB := SenderToPair(validators[0], validators[1])
+			BtoA := SenderToPair(validators[1], validators[0])
+			list := make([]TransactionMsg, 5)
+			list[0] = TransactionMsg{BillDetails: AtoB, Msg: "apples"}
+			list[1] = TransactionMsg{BillDetails: BtoA, Msg: "bananas"}
+			list[2] = TransactionMsg{BillDetails: AtoB, Msg: "oranges"}
+			list[3] = TransactionMsg{BillDetails: BtoA, Msg: "lemon"}
+			list[4] = TransactionMsg{BillDetails: AtoB, Msg: "peach"}
+			logger := &Logger.MockLogger{}
+			hasher := &Hasher.MockHasher{InstantHashValue: "123456"}
+
+			prefixNew := fmt.Sprintf("%s%s", prefixOld, prefix)
+			fmt.Printf("%s Test  Cases for insert a block to chain \n", prefixOld)
+			itShouldInsert := func(prefixOld string) {
+				var chain BlockChainMessage
+				chain.ChainGenesis(logger, hasher, validators[0], 0)
+				chain[0].Transactions = list
+				first := chain[0]
+				candidateBlock := BlockMessage{}
+				candidateBlock.BlockEntity.Index = 1
+				candidateBlock.BlockEntity.ParentHash = "123456"
+				err := chain.InsertNewBlock(logger, hasher, candidateBlock)
+				expectorNoErr(t, err, prefixOld)
+				callExpector[int](2, len(chain), t, prefixOld, "chain size")
+				callExpector[Block](candidateBlock.BlockEntity, chain[1].BlockEntity, t, prefixOld, "item in  index 1")
+				callExpector[Block](first.BlockEntity, chain[0].BlockEntity, t, prefixOld, "item in  index 0")
+				callExpector[int](0, len(chain[1].Transactions), t, prefixOld, "Trnasaction list at index 1  size")
+				fmt.Printf("%s  it should  insert a valid block \n", prefixOld)
+			}
+			itShouldFail := func(prefixOld string) {
+				prefixNew := fmt.Sprintf("%s%s", prefixOld, prefix)
+				fmt.Printf("%s Test  Cases for fail to insert a block to chain \n", prefixOld)
+				// -- test fail index  --
+				itShouldFailDueToIndex := func(prefixOld string) {
+
+					var chain BlockChainMessage
+					chain.ChainGenesis(logger, hasher, validators[0], 0)
+					chain[0].Transactions = list
+					first := chain[0]
+					candidateBlock := BlockMessage{}
+					candidateBlock.BlockEntity.Index = 2
+					candidateBlock.BlockEntity.ParentHash = "123456"
+					err := chain.InsertNewBlock(logger, hasher, candidateBlock)
+					expectedErr := errors.New("has  not  correct indexing")
+					callExpector[string](expectedErr.Error(), err.Error(), t, prefixOld, "expected error")
+					callExpector[int](1, len(chain), t, prefixOld, "chain size")
+					callExpector[Block](first.BlockEntity, chain[0].BlockEntity, t, prefixOld, "item in  index 0")
+
+					fmt.Printf("%s  it should  fail  insert an invalid block 'invalid index' \n", prefixOld)
+				}
+				itShouldFailDueToparrentHash := func(prefixOld string) {
+					var chain BlockChainMessage
+					chain.ChainGenesis(logger, hasher, validators[0], 0)
+					chain[0].Transactions = list
+					first := chain[0]
+					candidateBlock := BlockMessage{}
+					candidateBlock.BlockEntity.Index = 1
+					candidateBlock.BlockEntity.ParentHash = "1234"
+					err := chain.InsertNewBlock(logger, hasher, candidateBlock)
+					expectedErr := errors.New("Parent  hash does  not match it previous  currentHash")
+					callExpector[string](expectedErr.Error(), err.Error(), t, prefixOld, "expected error")
+					callExpector[int](1, len(chain), t, prefixOld, "chain size")
+					callExpector[Block](first.BlockEntity, chain[0].BlockEntity, t, prefixOld, "item in  index 0")
+					fmt.Printf("%s  it should  fail  insert an invalid block 'invalid parent hash' \n", prefixOld)
+				}
+				itShouldFailDueToHashValid := func(prefixOld string) {
+					hasher.Invalid = true
+					hasher.CallValid = 0
+					hasher.InvalidError = "invalid hash"
+					var chain BlockChainMessage
+					chain.ChainGenesis(logger, hasher, validators[0], 0)
+					chain[0].Transactions = list
+					first := chain[0]
+					candidateBlock := BlockMessage{}
+					candidateBlock.BlockEntity.Index = 1
+					candidateBlock.BlockEntity.ParentHash = "123456"
+					err := chain.InsertNewBlock(logger, hasher, candidateBlock)
+					expectedErr := errors.New(hasher.InvalidError)
+					callExpector[string](expectedErr.Error(), err.Error(), t, prefixOld, "expected error")
+					callExpector[int](1, len(chain), t, prefixOld, "chain size")
+					callExpector[Block](first.BlockEntity, chain[0].BlockEntity, t, prefixOld, "item in  index 0")
+					callExpector[int](1, hasher.CallValid, t, prefixOld, "call  Hsh.valid")
+					hasher.Invalid = false
+					hasher.CallValid = 0
+					hasher.InvalidError = ""
+					fmt.Printf("%s  it should  fail  insert an invalid block 'invalid hash  compination' \n", prefixOld)
+				}
+				itShouldFailDueToCappicity := func(prefixOld string) {
+					list := make([]TransactionMsg, 4)
+					list[0] = TransactionMsg{BillDetails: AtoB, Msg: "apples"}
+					list[1] = TransactionMsg{BillDetails: BtoA, Msg: "peach"}
+					list[2] = TransactionMsg{BillDetails: BtoA, Msg: "bannanas"}
+					list[3] = TransactionMsg{BillDetails: AtoB, Msg: "mellons"}
+					var chain BlockChainMessage
+					chain.ChainGenesis(logger, hasher, validators[0], 0)
+					chain[0].Transactions = list
+					first := chain[0]
+					candidateBlock := BlockMessage{}
+					candidateBlock.BlockEntity.Index = 1
+					candidateBlock.BlockEntity.ParentHash = "123456"
+					err := chain.InsertNewBlock(logger, hasher, candidateBlock)
+					errmsg := fmt.Sprintf(ErrTransactionListIsNorFullYet, 5, 4)
+					expectedErr := errors.New(errmsg)
+					callExpector[string](expectedErr.Error(), err.Error(), t, prefixOld, "expected error")
+					callExpector[int](1, len(chain), t, prefixOld, "chain size")
+					callExpector[Block](first.BlockEntity, chain[0].BlockEntity, t, prefixOld, "item in  index 0")
+					fmt.Printf("%s  it should  fail  insert an invalid block 'capicity error ' \n", prefixOld)
+				}
+				itShouldFailDueToIndex(prefixNew)
+				itShouldFailDueToparrentHash(prefixNew)
+				itShouldFailDueToHashValid(prefixNew)
+				itShouldFailDueToCappicity(prefixNew)
+			}
+
+			itShouldInsert(prefixNew)
+			itShouldFail(prefixNew)
+		}
+		TestInsertTransactions := func(prefixOld string) {
+			AtoB := SenderToPair(validators[0], validators[1])
+			prefixNew := fmt.Sprintf("%s%s", prefixOld, prefix)
+			fmt.Printf("%s Test  for  insert transactions \n", prefixOld)
+			logger := &Logger.MockLogger{}
+			hasher := &Hasher.MockHasher{InstantHashValue: "123456"}
+			itShouldInsert := func(prefixOld string) {
+				var chain BlockChainMessage
+				chain.ChainGenesis(logger, hasher, validators[0], 0)
+				transaction := TransactionMsg{BillDetails: AtoB, Msg: "apples"}
+				chain.InsertTransactions(transaction)
+				callExpector[int](1, len(chain), t, prefixOld, "chain size")
+				callExpector[int](1, len(chain[0].Transactions), t, prefixOld, "tranaction list size")
+				callExpector[TransactionMsg](transaction, chain[0].Transactions[0], t, prefixOld, "item in  index 0")
+				fmt.Printf("%s  it should    insert a transaction  \n", prefixOld)
+
+			}
+			itShouldInsert(prefixNew)
+		}
+		TestGenesis(prefixNew)
+		TestInsertBlock(prefixNew)
+		TestInsertTransactions(prefixNew)
+
+	}
 	TestBlockCoin(prefix)
+	TestBlockMsg(prefix)
 }

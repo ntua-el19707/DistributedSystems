@@ -134,3 +134,75 @@ func (block *BlockMessage) Genesis(Validator rsa.PublicKey, Parent, Current stri
 func (b *BlockMessage) MineBlock(validator rsa.PublicKey, previousBlock Block, logger Logger.LoggerService, hasher Hasher.HashService) error {
 	return b.BlockEntity.MineBlock(validator, previousBlock, logger, hasher)
 }
+func equalPublicKeys(key1, key2 *rsa.PublicKey) bool {
+	return key1.N.Cmp(key2.N) == 0 && key1.E == key2.E
+}
+func (b *BlockMessage) GetTransactions(from, twoWay bool, keys []rsa.PublicKey, times []int64) []TransactionMsg {
+	var list []TransactionMsg
+	add := func(t TransactionMsg) {
+		if len(times) == 0 {
+			list = append(list, t)
+		} else if len(times) == 1 {
+			created := t.BillDetails.Created_at
+			if created >= times[0] {
+				list = append(list, t)
+			}
+		} else if len(times) >= 2 {
+			created := t.BillDetails.Created_at
+			if created >= times[0] && created <= times[1] {
+				list = append(list, t)
+			}
+		}
+	}
+
+	if len(keys) == 0 {
+		return nil
+	} else if len(keys) == 1 {
+		if twoWay {
+			key := keys[0]
+			for _, t := range b.Transactions {
+				from := t.BillDetails.Bill.From.Address
+				to := t.BillDetails.Bill.To.Address
+				if equalPublicKeys(&key, &from) || equalPublicKeys(&key, &to) {
+					add(t)
+				}
+			}
+		} else if from {
+			key := keys[0]
+			for _, t := range b.Transactions {
+				from := t.BillDetails.Bill.From.Address
+				if equalPublicKeys(&key, &from) {
+					add(t)
+				}
+			}
+		} else {
+			key := keys[0]
+			for _, t := range b.Transactions {
+				to := t.BillDetails.Bill.To.Address
+				if equalPublicKeys(&key, &to) {
+					add(t)
+				}
+			}
+		}
+	} else {
+		fromKey := keys[0]
+		toKey := keys[1]
+		for _, t := range b.Transactions {
+			from := t.BillDetails.Bill.From.Address
+			to := t.BillDetails.Bill.To.Address
+
+			if equalPublicKeys(&fromKey, &from) && equalPublicKeys(&toKey, &to) {
+				add(t)
+			} else if equalPublicKeys(&fromKey, &to) && equalPublicKeys(&toKey, &from) && twoWay {
+				add(t)
+			}
+		}
+
+	}
+	return list
+
+}
+
+func (b *BlockMessage) InsertTransaction(t TransactionMsg) {
+	b.Transactions = append(b.Transactions, t)
+}

@@ -4,9 +4,9 @@ go 1.21.3
 
 require github.com/rabbitmq/amqp091-go v1.9.0 // indirect
 
-replace services v0.0.0 => ../services
+replace Service v0.0.0 => ../services/service
 
-require services v0.0.0
+require Service v0.0.0
 
 replace Logger v0.0.0 => ../services/Logger
 

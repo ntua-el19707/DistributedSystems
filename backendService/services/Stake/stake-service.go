@@ -67,6 +67,10 @@ type sumResponseStruct struct {
 	key rsa.PublicKey
 }
 
+func EqualPublicKeys(key1, key2 *rsa.PublicKey) bool {
+	return key1.N.Cmp(key2.N) == 0 && key1.E == key2.E
+}
+
 /*
 *
 
@@ -87,13 +91,18 @@ func sum(Transactions []entitys.TransactionCoins, key rsa.PublicKey, scaleFactor
 	// 0 <= scaleFactor <1  'From'  have  more chance
 	// scaleFactor > 1  'To'  have  more chance
 	// scaleFactor = 1  equal  distibution
-	var sum float64 //  sum = 0   initial
+	sum := float64(0) //  sum = 0   initial
 	for _, t := range Transactions {
 		//Scan  The  block
-		if t.BillDetails.Bill.From.Address == key {
-			sum += t.Amount
+		from := t.BillDetails.Bill.From.Address
+		to := t.BillDetails.Bill.To.Address
+		var zero rsa.PublicKey
+		if zero != from {
+			if EqualPublicKeys(&from, &key) {
+				sum += t.Amount
+			}
 		}
-		if t.BillDetails.Bill.To.Address == key {
+		if EqualPublicKeys(&to, &key) {
 			sum += scaleFactor * t.Amount
 		}
 	}
@@ -150,7 +159,7 @@ func (service *StakeCoinBlockChain) MapOfDistibutesRoundUp(scaleFactor float64) 
 	logger.Log("Start MapOfDistibutesRoundUp ")
 
 	amounts, total := service.distributionOfStake(scaleFactor)
-
+	fmt.Println(service.Block)
 	roundedMap := make(map[rsa.PublicKey]int)
 	sum := 0
 	for key, amount := range amounts {
@@ -193,6 +202,39 @@ type StakeMesageBlockChain struct {
 /*
 *
 
+	sumMsGLen -  local  funvtions  that  sum  the  transactions of  a  client 'key'
+	@Param  Transactions []  entitys.TransactionMsg
+	@Param  key  rsa.PublicKey
+	@Param  scaleFactor  float64
+	@Param  notify   chan sumResponseStruct
+*/
+func sumMsgLen(Transactions []entitys.TransactionMsg, key rsa.PublicKey, scaleFactor float64, notify chan sumResponseStruct) {
+	//?  what  is  scaleFactor  ?
+	// 0 <= scaleFactor <1  'From'  have  more chance
+	// scaleFactor > 1  'To'  have  more chance
+	// scaleFactor = 1  equal  distibution
+	var sum float64 //  sum = 0   initial
+	for _, t := range Transactions {
+		//Scan  The  block
+		from := t.BillDetails.Bill.From.Address
+		to := t.BillDetails.Bill.To.Address
+		var zero rsa.PublicKey
+		if zero != from {
+			if EqualPublicKeys(&from, &key) {
+				sum += float64(len(t.Msg))
+			}
+		}
+		if EqualPublicKeys(&to, &key) {
+			sum += scaleFactor * float64(len(t.Msg))
+		}
+	}
+	resp := sumResponseStruct{sum: sum, key: key}
+	notify <- resp
+}
+
+/*
+*
+
 	construct -- Service  Construct  @Service stakeService   @Implementation  stakeMessageBlockChain
 	@Returns  error
 */
@@ -210,6 +252,89 @@ func (service *StakeMesageBlockChain) Construct() error {
 	}
 	service.Services.LoggerService.Log("Service  created")
 	return nil
+}
+
+/*
+*
+
+	distributionOfStake() -- Distribute Stake   @Service stakeService   @Implementation  stakeMessageBlockChain
+	@Param   scaleFactor  float64
+	@Return  map[rsa.PublicKey] float64 , float64
+*/
+func (service *StakeMesageBlockChain) distributionOfStake(scaleFactor float64) (map[rsa.PublicKey]float64, float64) {
+	//loger  service  insatnce
+	logger := service.Services.LoggerService
+	block := service.Block
+	//*  Log  The  Start of  Service
+	logger.Log("Start  DistibutionOfStake ")
+
+	var total float64                    //  holds  the  Total amount of Block
+	totalWorkers := len(service.Workers) //How  many  clients
+	//create  a channel to  collect the weight  of  each one
+	collector := make(chan sumResponseStruct, totalWorkers)
+	for i := 0; i < totalWorkers; i++ {
+		go sumMsgLen(block.Transactions, service.Workers[i], scaleFactor, collector)
+	}
+	//Create  Distribution Map
+	distributionMap := make(map[rsa.PublicKey]float64)
+	for i := 0; i < totalWorkers; i++ {
+		//Collect  Each One
+		record := <-collector
+		distributionMap[record.key] = record.sum
+		total += record.sum
+	}
+	//*  Log  The commit
+	logger.Log("Commit  DistibutionOfStake ")
+	return distributionMap, total
+	//*  NOTES  :  distributionOfStake() -(main routine) will  Break  n (len  workers  ) routines
+	//?  Why  There  is  no semaphore  for  distributionMap[record.key] = record.sum and  total
+	//&  Beacause  the collection  and  save  is  happening in main routine (Blocking  style  )
+}
+
+/*
+*
+
+	MapOfDistibutesRoundUp() -- create  Weight  ineteger  for distribution map      @Service stakeService   @Implementation  stakeMsgBlockChain
+	@Param   scaleFactor  float64
+	@Return  map[rsa.PublicKey] float64 , float64
+*/
+func (service *StakeMesageBlockChain) MapOfDistibutesRoundUp(scaleFactor float64) (map[rsa.PublicKey]int, int) {
+	logger := service.Services.LoggerService
+	logger.Log("Start MapOfDistibutesRoundUp ")
+
+	amounts, total := service.distributionOfStake(scaleFactor)
+
+	roundedMap := make(map[rsa.PublicKey]int)
+	sum := 0
+	for key, amount := range amounts {
+		roundedMap[key] = int((amount / total) * 100000)
+		sum += roundedMap[key]
+	}
+	//? why  1000 intead of 100
+	//&  increase  accuracy  of  % etc  0.4832 with 100 =>  48% , 1000 => 48.3% , => 10000 => 48.32%
+	logger.Log("Commit MapOfDistibutesRoundUp ")
+	return roundedMap, sum
+}
+
+/*
+*
+
+	GetCurrentHash() -- get block  current  hash    @Service stakeService   @Implementation  StakeMesageBlockChain
+	@Return  string
+*/
+func (service *StakeMesageBlockChain) GetCurrentHash() string {
+	return service.Block.BlockEntity.CurrentHash //  return  hash  of  block
+}
+
+/*
+*
+
+	getWorkers() -- get Workers    @Service stakeService   @Implementation  StakeMesageBlockChain
+	@Return  [] rsa.PublicKey
+*/
+func (service StakeMesageBlockChain) GetWorkers() []rsa.PublicKey {
+	//*  VERY IMPORTANT Law : all  nodes must have the same  order in service worker and same  list
+	return service.Workers //  return  workers
 }
 
 type MockStake struct {

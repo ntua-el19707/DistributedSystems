@@ -26,7 +26,12 @@ type LotteryImpl struct {
 	Services LotteryProviders
 }
 
-func (service LotteryImpl) Construct() error {
+func (service *LotteryImpl) Construct() error {
+	if service.Services.LoggerService == nil {
+		service.Services.LoggerService = &Logger.Logger{}
+		return service.Services.LoggerService.Construct()
+
+	}
 	return nil
 }
 func (service *LotteryImpl) LoadStakeService(stakeService Stake.StakeService) {

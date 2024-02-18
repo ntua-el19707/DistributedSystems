@@ -137,6 +137,115 @@ func TestBlock(t *testing.T) {
 	TestValidBlock(t, prefix)
 	TestMineBlock(t, prefix)
 }
+func callExpector[T comparable](obj1, obj2 T, t *testing.T, prefix, what string) {
+	if obj1 != obj2 {
+		t.Errorf("%s  Expected  '%s' to get %v but %v ", prefix, what, obj1, obj2)
+	}
+}
+func expectorNoErr(t *testing.T, err error, prefixOld string) {
+	if err != nil {
+		t.Errorf("%s Expect no Err  but  got %v", prefixOld, err)
+	}
+}
+
+func TestForBlockMsg(t *testing.T) {
+	fmt.Println("*  Test for blockMsg ")
+	const prefix string = "----"
+	keyGen := func(n int) ([]rsa.PublicKey, error) {
+		var publicKeys []rsa.PublicKey
+
+		for i := 0; i < n; i++ {
+			privateKey, err := rsa.GenerateKey(rand.Reader, 2048)
+			if err != nil {
+				return nil, fmt.Errorf("failed to generate RSA key pair: %v", err)
+			}
+			publicKeys = append(publicKeys, privateKey.PublicKey)
+		}
+		return publicKeys, nil
+	}
+	SenderToPair := func(from, to rsa.PublicKey) TransactionDetails {
+		return TransactionDetails{Bill: BillingInfo{From: Client{Address: from}, To: Client{Address: to}}}
+	}
+	//create keys
+	pkList, err := keyGen(2)
+	expectorNoErr(t, err, "")
+	TestGenesis := func(prefixOld string) {
+		fmt.Printf("%s  Test for Genesis\n", prefixOld)
+		prefixNew := fmt.Sprintf("%s%s", prefixOld, prefix)
+
+		itShouldGenesis := func(prefixOld string) {
+			block := BlockMessage{}
+			mockLogger := Logger.MockLogger{}
+			parrentHash := "1111"
+			currentHash := "2222"
+			block.Genesis(pkList[0], parrentHash, currentHash, &mockLogger)
+			callExpector[rsa.PublicKey](pkList[0], block.BlockEntity.Validator, t, prefixOld, "Validator")
+			callExpector[string](parrentHash, block.BlockEntity.ParentHash, t, prefixOld, "Parent Hash")
+			callExpector[string](currentHash, block.BlockEntity.CurrentHash, t, prefixOld, "Current Hash")
+			callExpector[int](0, len(block.Transactions), t, prefixOld, "size of transaction List")
+			callExpector[int](0, block.BlockEntity.Index, t, prefixOld, "block index")
+			fmt.Printf("%sIt should  genesis  a general block msg\n", prefixOld)
+		}
+		itShouldGenesis(prefixNew)
+	}
+	TestForMine := func(prefixOld string) {
+		block := BlockMessage{}
+		mockLogger := Logger.MockLogger{}
+		parrentHash := "1111"
+		currentHash := "2222"
+		block.Genesis(pkList[0], parrentHash, currentHash, &mockLogger)
+		fmt.Printf("%s  Test for Mine\n", prefixOld)
+		prefixNew := fmt.Sprintf("%s%s", prefixOld, prefix)
+		itShouldMine := func(prefixOld string) {
+			hash := Hasher.MockHasher{}
+			hash.Hashvalue = "3333"
+			newBlock := BlockMessage{}
+			err := newBlock.MineBlock(pkList[1], block.BlockEntity, &mockLogger, &hash)
+			expectorNoErr(t, err, prefixOld)
+			callExpector[rsa.PublicKey](pkList[1], newBlock.BlockEntity.Validator, t, prefixOld, "Validator")
+			callExpector[string](currentHash, newBlock.BlockEntity.ParentHash, t, prefixOld, "Parent Hash")
+			callExpector[string]("3333", newBlock.BlockEntity.CurrentHash, t, prefixOld, "Current Hash")
+			callExpector[int](1, newBlock.BlockEntity.Index, t, prefixOld, "block index")
+			callExpector[int](0, len(newBlock.Transactions), t, prefixOld, "size of transaction List")
+			fmt.Printf("%sIt should  mine  a  block msg\n", prefixOld)
+		}
+		itShouldFail := func(prefixOld string) {
+			hash := Hasher.MockHasher{}
+			hash.HashFailed = true
+			errExpected := errors.New("has  faield ")
+			newBlock := BlockMessage{}
+			err := newBlock.MineBlock(pkList[1], block.BlockEntity, &mockLogger, &hash)
+			callExpector[string](errExpected.Error(), err.Error(), t, prefixOld, "error ")
+			fmt.Printf("%sIt should fail mine  a  block msg\n", prefixOld)
+
+		}
+		itShouldMine(prefixNew)
+		itShouldFail(prefixNew)
+	}
+	TestInsertTransaction := func(prefixOld string) {
+		fmt.Printf("%s  Test for Insert Transaction Msg\n", prefixOld)
+		prefixNew := fmt.Sprintf("%s%s", prefixOld, prefix)
+		AToB := SenderToPair(pkList[0], pkList[1])
+		itShouldInsert := func(prefixOld string) {
+
+			block := BlockMessage{}
+			mockLogger := Logger.MockLogger{}
+			parrentHash := "1111"
+			currentHash := "2222"
+			block.Genesis(pkList[0], parrentHash, currentHash, &mockLogger)
+			transaction := TransactionMsg{BillDetails: AToB, Msg: "hello  world"}
+			block.InsertTransaction(transaction)
+			callExpector[int](1, len(block.Transactions), t, prefixOld, "size of transaction List")
+			callExpector[TransactionMsg](transaction, block.Transactions[0], t, prefixOld, "transaction at  index 0")
+			fmt.Printf("%sIt should inesrt  a  transaction \n", prefixOld)
+
+		}
+		itShouldInsert(prefixNew)
+	}
+	TestGenesis(prefix)
+	TestForMine(prefix)
+	TestInsertTransaction(prefix)
+}
 func TestBlockCoin(t *testing.T) {
 	fmt.Println("Test  fot  Block Coin ")
 	keyGen := func(n int) ([]rsa.PublicKey, error) {

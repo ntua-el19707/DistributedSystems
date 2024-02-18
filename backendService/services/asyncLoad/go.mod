@@ -2,6 +2,10 @@ module github.com/ntua-el19707/DistributedSystems/backendService/services/asyncL
 
 go 1.21.3
 
+replace MessageSystem v0.0.0 => ../../MessageSystem
+
+require MessageSystem v0.0.0
+
 replace Service v0.0.0 => ../service
 
 require Service v0.0.0
@@ -41,3 +45,5 @@ require Stake v0.0.0
 replace Logger v0.0.0 => ../Logger
 
 require Logger v0.0.0
+
+require github.com/rabbitmq/amqp091-go v1.9.0 // indirect

@@ -7,6 +7,57 @@ import (
 	"time"
 )
 
+func callExpector[T comparable](obj1, obj2 T, t *testing.T, prefix, what string) {
+	if obj1 != obj2 {
+		t.Errorf("%s  Expected  '%s' to get %v but %v ", prefix, what, obj1, obj2)
+	}
+}
+func expectorNoErr(t *testing.T, err error, prefixOld string) {
+	if err != nil {
+		t.Errorf("%s Expect no Err  but  got %v", prefixOld, err)
+	}
+}
+
+func TestConsumer(t *testing.T) {
+	const prefix = "----"
+	fmt.Printf("*  test  for  consumers\n")
+
+	const RABBITMQ = "amqp://v:123456@127.0.0.1:5672/"
+	const EXCHANGE = "collors"
+	const QUEUE = "colorQueue"
+	logger := &Logger.MockLogger{}
+	err := CreateAndBind(RABBITMQ, QUEUE, EXCHANGE, &Logger.MockLogger{})
+	expectorNoErr(t, err, "")
+	type msgType struct {
+		Msg string `json:"msg"`
+	}
+	msg1 := msgType{Msg: "green"}
+	msg2 := msgType{Msg: "yellow"}
+	msg3 := msgType{Msg: "red"}
+
+	err = ProducerBroadCast(msg1, RABBITMQ, EXCHANGE, logger)
+	expectorNoErr(t, err, "")
+	err = ProducerBroadCast(msg2, RABBITMQ, EXCHANGE, logger)
+	expectorNoErr(t, err, "")
+	err = ProducerBroadCast(msg3, RABBITMQ, EXCHANGE, logger)
+	expectorNoErr(t, err, "")
+	TestConsumeOne := func(prefixOld string) {
+		itShouldConsumeOne := func(prefixOld string) {
+			first, err := ConsumeOne[msgType](RABBITMQ, QUEUE, logger)
+			expectorNoErr(t, err, "")
+			callExpector(msg1, first, t, prefixOld, "first message ")
+			second, err := ConsumeOne[msgType](RABBITMQ, QUEUE, logger)
+			expectorNoErr(t, err, "")
+			callExpector(msg2, second, t, prefixOld, "second  message ")
+			third, err := ConsumeOne[msgType](RABBITMQ, QUEUE, logger)
+			expectorNoErr(t, err, "")
+			callExpector(msg3, third, t, prefixOld, "third message ")
+		}
+		itShouldConsumeOne(prefixOld)
+	}
+	TestConsumeOne(prefix)
+}
+
 func TestSendOnePackageTo3Conusmers(t *testing.T) {
 	logger := &Logger.MockLogger{}
 	type msgType struct {

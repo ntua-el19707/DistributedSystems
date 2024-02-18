@@ -9,6 +9,7 @@ import (
 	"entitys"
 	"errors"
 	"fmt"
+	"log"
 )
 
 const TransactionManagerServiceName = "TransactionManagerService"
@@ -24,7 +25,7 @@ type TransactionManagerService interface {
 // TransactionManger  struct
 
 type TransactionManager struct {
-	WalletServiceInstance      WalletAndTransactions.WalletService
+	WalletServiceInstance      *WalletAndTransactions.WalletStructV1Implementation
 	LoggerServiceInstance      Logger.LoggerService
 	FindBalanceServiceInstance FindBalance.BalanceService
 }
@@ -62,6 +63,7 @@ func (transactionManager *TransactionManager) Construct() error {
 
 // Transfer  Money
 func (transactionManager TransactionManager) TransferMoney(to rsa.PublicKey, amount float64) (entitys.TransactionCoinSet, error) {
+	log.Println("hello")
 	err := transactionManager.unValidService()
 	var zeroSet entitys.TransactionCoinSet
 	if err != nil {
