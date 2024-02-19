@@ -1,0 +1,73 @@
+$coin-size: 250px;
+$small-coin-size: $coin-size * 0.110; // 10% of the size of the logo coin
+$font-size-coin: 30px;
+$font-size-small: 0.4 * $font-size-coin;
+$card-size: $coin-size * 1.15;
+
+.card {
+    width: $card-size;
+    margin: 10% auto 0; // 10% margin-top, auto for horizontal centering
+}
+
+.coin {
+    width: $coin-size;
+    height: $coin-size;
+    background-color: #D4AF37; // Gold color
+    border-radius: 50%;
+    border: 5px solid #CD8500; // Slightly darker gold border
+    display: flex;
+    justify-content: center;
+    align-items: center;
+
+    span {
+        font-size: 20px;
+        color: black;
+        font-weight: bold;
+    }
+}
+
+.small-coin {
+    width: $small-coin-size;
+    height: $small-coin-size;
+    background-color: #D4AF37; // Gold color
+    border-radius: 50%;
+    border: 3px solid #CD8500; // Slightly darker gold border
+    margin-right: 10px; // Space between the small coin and text
+
+    span {
+        font-size: $font-size-small;
+        color: black;
+        font-weight: bold;
+    }
+}
+
+.row {
+    display: flex;
+    align-items: center;
+    justify-content: flex-end; // Align items to the right
+ 
+ 
+}
+
+.box {
+    width: $coin-size;
+    height: max-content;
+}
+
+.btn {
+    width: $card-size;
+}
+
+.mat-card-content {
+    display: flex;
+    align-items: center;
+}
+.uri-link {
+    margin-left: 10px; // Adjust the margin as needed
+    vertical-align: middle; // Align vertically with the text
+}
+
+.uri-link a {
+    text-decoration: none;
+    color: #007bff; // Blue color
+}

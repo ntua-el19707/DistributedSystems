@@ -43,7 +43,7 @@ func setQueues(node string) {
 		queue = fmt.Sprintf("%s-%s", queue, node)
 		return RabbitMqService.QueueAndExchange{Queue: queue, Exchange: exchange}
 	}
-	RabbitMqUri := "amqp://v:123456@192.168.56.112:5672/"
+	RabbitMqUri := "amqp://v:123456@127.0.0.1:5672/"
 	TransactionCoinSetQueueExchange := genSet("transactionCoins", "TCOINS", node)
 	TransactionMsgSetQueueExchange := genSet("transactionMsg", "TMSG", node)
 	BlockMsgQueueExchange := genSet("BlockCoins", "BCOIN", node)

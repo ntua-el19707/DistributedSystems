@@ -75,6 +75,7 @@ func main() {
 */
 func setUpServer(serverPort string, c bool) {
 	server := &http.ServeMux{}
+
 	//*  SET THE  ROUTER FUNCTION
 	setUpMainRouter(server, c)
 	log.Printf("Server  is  Listening  on  Port %s...\n", serverPort)

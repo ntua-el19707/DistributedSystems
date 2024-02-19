@@ -19,7 +19,11 @@ const connectRouterMessage = "The  router '%s' is  connected to '%s' router  "
 */
 func setUpMainRouter(s *http.ServeMux, c bool) {
 	log.Printf(setUpRouteMessage, "/")
-	s.HandleFunc("/", defaultEmptyHttpController)
+	//s.HandleFunc("/", defaultEmptyHttpController)
+	 staticDir := "./staticServer/browser"
+    fs := http.FileServer(http.Dir(staticDir))
+ s.Handle("/", http.StripPrefix("/", fs))
+
 	//set api
 	api := http.NewServeMux()
 	prefix := "/api"
