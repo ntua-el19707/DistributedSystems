@@ -159,7 +159,6 @@ func (service *StakeCoinBlockChain) MapOfDistibutesRoundUp(scaleFactor float64) 
 	logger.Log("Start MapOfDistibutesRoundUp ")
 
 	amounts, total := service.distributionOfStake(scaleFactor)
-	fmt.Println(service.Block)
 	roundedMap := make(map[rsa.PublicKey]int)
 	sum := 0
 	for key, amount := range amounts {

@@ -22,10 +22,11 @@ type BlockChainService interface {
 	InsertTransaction(t []entitys.TransactionCoinEntityRoot)
 }
 type BlockChainCoinsImpl struct {
-	Chain    entitys.BlockChainCoins
-	Workers  []rsa.PublicKey
-	Services BlockServiceProviders
-	mu       sync.Mutex
+	Chain       entitys.BlockChainCoins
+	Workers     []rsa.PublicKey
+	Services    BlockServiceProviders
+	mu          sync.Mutex
+	ScaleFactor float64
 }
 type BlockServiceProviders struct {
 	LoggerService         Logger.LoggerService
@@ -90,16 +91,46 @@ func (service *BlockChainCoinsImpl) Genesis() error {
 	service.Chain.ChainGenesis(service.Services.LoggerService, service.Services.HashService, service.Services.WalletServiceInstance.GetPub(), 0)
 	return nil
 }
-func (service *BlockChainCoinsImpl) FindBalance() (float64, error) {
-	err := service.Services.valid()
-	if err != nil {
-		return 0, err
-	}
-
-	return 0, nil
-}
 
 const ErrMsgNotValidator = ""
+
+func (service *BlockChainCoinsImpl) FindBalance(key rsa.PublicKey) float64 {
+	service.mu.Lock()
+	defer service.mu.Unlock()
+	amount := service.Chain.FindBalance(key)
+	return amount
+
+}
+func (service *BlockChainCoinsImpl) findAndLock(amount float64) (float64, error) {
+
+	service.mu.Lock()
+	defer service.mu.Unlock()
+
+	err := service.Services.WalletServiceInstance.Freeze(amount)
+	if err != nil {
+		errMsg := fmt.Sprintf("Could not Freeze  money due to %s ", err.Error())
+		return 0, errors.New(errMsg)
+	}
+	frozen := service.Services.WalletServiceInstance.GetFreeze()
+
+	total := service.Chain.FindBalance(service.Services.WalletServiceInstance.GetPub())
+
+	return total - frozen, nil
+
+}
+func (service *BlockChainCoinsImpl) GetTransactions(from, twoWay bool, keys []rsa.PublicKey, times []int64) []entitys.TransactionCoins {
+	logger := service.Services.LoggerService
+	service.mu.Lock()
+	defer func() {
+		logger.Log("Unlock")
+		service.mu.Unlock()
+	}()
+	logger.Log("Lock")
+
+	list := service.Chain.GetTransactions(from, twoWay, keys, times)
+
+	return list
+}
 
 func (service *BlockChainCoinsImpl) InsertTransaction(t entitys.TransactionCoinSet) error {
 	logger := service.Services.LoggerService
@@ -123,6 +154,7 @@ func (service *BlockChainCoinsImpl) InsertTransaction(t entitys.TransactionCoinS
 	if lastBlock.BlockEntity.Capicity <= len(lastBlock.Transactions) {
 		//Mine Block
 		logger.Log("Start  Mine Block Coins")
+
 		stake := Stake.StakeCoinBlockChain{
 			Block:   lastBlock,
 			Workers: service.Workers}
@@ -131,7 +163,7 @@ func (service *BlockChainCoinsImpl) InsertTransaction(t entitys.TransactionCoinS
 			logger.Fatal(err.Error())
 		}
 		service.Services.LotteryService.LoadStakeService(&stake)
-		luckyOne, err := service.Services.LotteryService.Spin(0)
+		luckyOne, err := service.Services.LotteryService.Spin(service.ScaleFactor)
 		if err != nil {
 			logger.Fatal(err.Error())
 		}
@@ -181,10 +213,11 @@ func (service *BlockChainCoinsImpl) InsertTransaction(t entitys.TransactionCoinS
 }
 
 type BlockChainMsgImpl struct {
-	Chain    entitys.BlockChainMessage
-	Workers  []rsa.PublicKey
-	Services BlockServiceProviders
-	mu       sync.Mutex
+	Chain       entitys.BlockChainMessage
+	Workers     []rsa.PublicKey
+	Services    BlockServiceProviders
+	mu          sync.Mutex
+	ScaleFactor float64
 }
 
 func (service *BlockChainMsgImpl) Construct() error {
@@ -217,6 +250,7 @@ func (service *BlockChainMsgImpl) Genesis() error {
 	service.Chain.ChainGenesis(service.Services.LoggerService, service.Services.HashService, service.Services.WalletServiceInstance.GetPub(), 0)
 	return nil
 }
+
 func (service *BlockChainMsgImpl) InsertTransaction(t entitys.TransactionMessageSet) error {
 
 	logger := service.Services.LoggerService
@@ -267,7 +301,7 @@ func (service *BlockChainMsgImpl) InsertTransaction(t entitys.TransactionMessage
 			return err
 		}
 		service.Services.LotteryService.LoadStakeService(&stake)
-		luckyOne, err := service.Services.LotteryService.Spin(1.5)
+		luckyOne, err := service.Services.LotteryService.Spin(service.ScaleFactor)
 		if err != nil {
 			// harakiri
 			logger.Fatal(err.Error())
@@ -299,6 +333,7 @@ func (service *BlockChainMsgImpl) InsertTransaction(t entitys.TransactionMessage
 
 	}
 	service.Chain.InsertTransactions(trMsg.Transaction)
+
 	if EqualPublicKeys(&processPublicKey, &sender) {
 		//stamp to who go the money
 		t.TransactionCoin.Transfer.Transaction.BillDetails.Bill.To.Address = validator

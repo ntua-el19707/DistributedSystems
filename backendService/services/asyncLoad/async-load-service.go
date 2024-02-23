@@ -4,7 +4,6 @@ import (
 	"Logger"
 	"RabbitMqService"
 	"Service"
-	"fmt"
 
 	"WalletAndTransactions"
 )
@@ -39,7 +38,6 @@ func (s *AsyncLoadImpl) Construct() error {
 func (s *AsyncLoadImpl) Consumer() {
 	go s.consumeTransactionsCoins()
 	go s.consumeTransactionsMsg()
-	fmt.Println("wait  for  msg ")
 	for {
 	}
 }
@@ -52,7 +50,6 @@ func (s *AsyncLoadImpl) consumeTransactionsCoins() {
 		s.Providers.LoggerService.Log("Waiting for  Transaction coin")
 		transaction := <-channel
 		s.Providers.LoggerService.Log("Received Transaction Coins")
-		fmt.Println(transaction)
 
 		s.Providers.BlockCoinService.InsertTransaction(transaction)
 	}

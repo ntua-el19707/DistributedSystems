@@ -4,7 +4,6 @@ import (
 	"Logger"
 	"Service"
 	"entitys"
-	"fmt"
 
 	"MessageSystem"
 )
@@ -107,7 +106,7 @@ func (service *RabbitMqImpl) ConsumerTransactionsCoins() {
 		go providers.consumerTransactionCoin(channel, providers.RabbitMqUri, providers.TransactionCoinSetQueueExchange.Queue, providers.TransactionCoinSetQueueExchange.Exchange, providers.LoggerService)
 		for {
 			pack := <-channel
-			fmt.Println(pack)
+
 			if pack.Err == nil {
 				providers.channelTransactionCoinSet <- pack.Payload
 			}
@@ -173,7 +172,7 @@ func (service *RabbitMqImpl) ConsumeNextBlockCoin() entitys.BlockCoinMessageRabb
 			providers.LoggerService.Fatal(err.Error())
 		}
 	}
-	fmt.Println(block)
+
 	return block
 }
 func (service *RabbitMqImpl) ConsumeNextBlockMsg() entitys.BlockMessageMessageRabbitMq {
@@ -187,7 +186,7 @@ func (service *RabbitMqImpl) ConsumeNextBlockMsg() entitys.BlockMessageMessageRa
 			providers.LoggerService.Fatal(err.Error())
 		}
 	}
-	fmt.Println(block)
+
 	return block
 }
 func (service *RabbitMqImpl) ConsumeNextSystemInfo() entitys.RabbitMqSystemInfoPack {

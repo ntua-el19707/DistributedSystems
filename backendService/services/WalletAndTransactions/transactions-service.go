@@ -1,7 +1,6 @@
 package WalletAndTransactions
 
 import (
-	"FindBalance"
 	"Generator"
 	"Logger"
 	"Service"
@@ -28,7 +27,7 @@ type TransactionService interface {
 type TransactionsStandard struct {
 	ServiceName            string
 	LoggerService          Logger.LoggerService
-	BalanceServiceInstance FindBalance.BalanceService
+	BalanceServiceInstance BalanceService
 	GeneratorService       Generator.GeneratorService
 	WalletService          WalletService
 	jsonStringfy           func(entitys.TransactionRecord) ([]byte, error)
@@ -143,10 +142,11 @@ func (t *TransactionsStandard) semiConstruct(id string) error {
 
 // only if  use  verifyTransaction
 func (transaction *TransactionCoins) semiConstruct() error {
+	transaction.Services.ServiceName = "transactions-coins"
 	return transaction.Services.semiConstruct(transaction.Transaction.Transaction.BillDetails.Transaction_id)
 }
 
-const ErrRequestFaildDueTotalMoneyFroze string = "Request To  sent %.3f from %.3f balance Failed  due to total Money Froze(for wallet  ) %.3f\n"
+const ErrRequestFaildDueTotalMoneyFroze string = "Request To  sent %.3f from makes  (total  -  frozen ) %.3f\n"
 
 /*
 *
@@ -174,39 +174,27 @@ func (t *TransactionCoins) CreateTransaction() error {
 	amount := transaction.Amount
 	//check if acount has the amount
 
-	sender := transaction.BillDetails.Bill.From.Address
 	//? i need  a service  to find  the balance  of the sender
 
-	Services.BalanceServiceInstance.LockBalance() // ensure  the  balance  will not  change
+	total, err := Services.BalanceServiceInstance.findAndLock(amount) // ensure  the  balance  will not  change
 	//wallet will have  balance -frozenMoney coins  that
 	//trnsction  is  not yet  added  in chain
 	//Be  optimist and  froze  the  coins
-	err = Services.WalletService.Freeze(amount)
 	if err != nil {
 		logger.Error(err.Error())
 		return err
 	}
 
 	//find  balance
-	balance, err := Services.BalanceServiceInstance.FindBalance(sender)
-	if err != nil {
-		//failed  load  balance  so transaction will  error =>  unfroze  the  money trnsaction will not  happen
-		Services.BalanceServiceInstance.UnLockBalance()
-		Services.WalletService.UnFreeze(amount)
-		return err
-	}
-	frozenMoney := Services.WalletService.GetFreeze()
-	if balance-frozenMoney < 0 {
-		message := fmt.Sprintf(ErrRequestFaildDueTotalMoneyFroze, amount, balance, frozenMoney)
+	if total < 0 {
+		message := fmt.Sprintf(ErrRequestFaildDueTotalMoneyFroze, amount, total)
 		// not  valid  trancation the total
-		Services.BalanceServiceInstance.UnLockBalance()
 		Services.WalletService.UnFreeze(amount)
 		logger.Error(message)
 		return errors.New(message)
 
 	}
 	logger.Log(fmt.Sprintf("Commit creating  Transaction %s", transactionDetails))
-	Services.BalanceServiceInstance.UnLockBalance()
 
 	return nil
 }
@@ -306,6 +294,7 @@ func (transaction *TransactionMsg) Construct() error {
 	return nil
 }
 func (transaction *TransactionMsg) semiConstruct() error {
+	transaction.Services.ServiceName = "transactions-msg"
 	return transaction.Services.semiConstruct(transaction.Transaction.Transaction.BillDetails.Transaction_id)
 }
 

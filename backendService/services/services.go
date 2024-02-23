@@ -1,7 +1,6 @@
 package services
 
 import (
-	"FindBalance"
 	"Hasher"
 	"Logger"
 	"Lottery"
@@ -29,6 +28,9 @@ var SystemInfoService SystemInfo.SystemInfoService
 var blockChainCoinService WalletAndTransactions.BlockChainCoinsImpl
 var blockChainMsgService WalletAndTransactions.BlockChainMsgImpl
 var InboxService Inbox.InboxService
+var FindBalanceService WalletAndTransactions.BalanceService
+var scaleFactorMsg float64
+var scaleFactorCoin float64
 
 func setQueues(node string) {
 	logger := Logger.Logger{ServiceName: "Set Queues And Constuct Wallet"}
@@ -81,7 +83,10 @@ func registerAndSystemInfo(coordinator bool, ExpectedWorkers int, Me, hostCoordi
 		bootStrapOrDie(&register, &logger)
 		logger.Log("commit Creating  register  service")
 		register.Register()
-		SystemInfoService.Consume()
+		err, scaleFactorMsg, scaleFactorCoin = SystemInfoService.Consume()
+		if err != nil {
+			log.Fatal(err.Error())
+		}
 	} else {
 		var params entitys.ClientRequestBody
 		params.PublicKey = WalletService.GetPub()
@@ -105,14 +110,6 @@ func providers(c bool) {
 	// -- WalletService --
 
 	//for now  use  mockFindBalance
-	MockFindBalance := FindBalance.MockFindBalance{}
-
-	MockFindBalance.Amount = float64(5000)
-	TransactionManagerService = &TransactionManager.TransactionManager{
-		WalletServiceInstance:      &WalletService,
-		FindBalanceServiceInstance: &MockFindBalance,
-	}
-	bootStrapOrDie(TransactionManagerService, &logger)
 	hashService := Hasher.HashImpl{}
 	bootStrapOrDie(&hashService, &logger)
 	spinProviders := Lottery.LotteryProviders{
@@ -127,7 +124,7 @@ func providers(c bool) {
 		LotteryService:        &lottery1,
 	}
 
-	blockChainCoinService = WalletAndTransactions.BlockChainCoinsImpl{Services: blockProviders1, Workers: []rsa.PublicKey{WalletService.GetPub()}}
+	blockChainCoinService = WalletAndTransactions.BlockChainCoinsImpl{ScaleFactor: scaleFactorCoin, Services: blockProviders1, Workers: []rsa.PublicKey{WalletService.GetPub()}}
 	bootStrapOrDie(&blockChainCoinService, &logger)
 	lottery2 := Lottery.LotteryImpl{Services: spinProviders}
 	bootStrapOrDie(&lottery2, &logger)
@@ -137,7 +134,7 @@ func providers(c bool) {
 		WalletServiceInstance: &WalletService,
 		LotteryService:        &lottery2,
 	}
-	blockChainMsgService = WalletAndTransactions.BlockChainMsgImpl{Services: blockProviders2, Workers: []rsa.PublicKey{WalletService.GetPub()}}
+	blockChainMsgService = WalletAndTransactions.BlockChainMsgImpl{ScaleFactor: scaleFactorMsg, Services: blockProviders2, Workers: []rsa.PublicKey{WalletService.GetPub()}}
 	bootStrapOrDie(&blockChainMsgService, &logger)
 	if c {
 		err = blockChainCoinService.Genesis()
@@ -176,7 +173,18 @@ func providers(c bool) {
 		blockChainMsgService.Workers = SystemInfoService.GetWorkers()
 		//NOW The re is  litle  a chance to fail Mine only if  internal error if err =>  commit  harakiri
 	}
-	InboxService = &Inbox.InboxImpl{Providers: Inbox.InboxProviders{BlockChainService: blockChainMsgService, SystemInfoService: SystemInfoService}}
+	FindBalanceService = &WalletAndTransactions.BalanceImplementation{
+		BlockChainService: &blockChainCoinService,
+		SystemInfoService: SystemInfoService,
+	}
+	bootStrapOrDie(FindBalanceService, &logger)
+
+	TransactionManagerService = &TransactionManager.TransactionManager{
+		WalletServiceInstance:      &WalletService,
+		FindBalanceServiceInstance: FindBalanceService,
+	}
+	bootStrapOrDie(TransactionManagerService, &logger)
+	InboxService = &Inbox.InboxImpl{Providers: Inbox.InboxProviders{BlockChainService: &blockChainMsgService, SystemInfoService: SystemInfoService}}
 	bootStrapOrDie(InboxService, &logger)
 
 	asyncProviders := asyncLoad.AsyncLoadProviders{
@@ -224,7 +232,9 @@ func SetUp() {
 	}
 
 }
-func BootOrDie(node, hostC, Me string, coordinator bool, ExpectedWorkers int) {
+func BootOrDie(node, hostC, Me string, coordinator bool, ExpectedWorkers int, sFm, sFc float64) {
+	scaleFactorMsg = sFm
+	scaleFactorCoin = sFc
 	setQueues(node)
 	registerAndSystemInfo(coordinator, ExpectedWorkers, Me, hostC, node)
 	providers(coordinator)

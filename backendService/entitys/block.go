@@ -101,7 +101,12 @@ func (block *BlockCoinEntity) Genesis(Validator rsa.PublicKey, Parent, Current s
 
 func (b *BlockCoinEntity) MineBlock(validator rsa.PublicKey, previousBlock Block, logger Logger.LoggerService, hasher Hasher.HashService) error {
 	return b.BlockEntity.MineBlock(validator, previousBlock, logger, hasher)
-} /*
+}
+func equalPublicKeys(key1, key2 *rsa.PublicKey) bool {
+	return key1.N.Cmp(key2.N) == 0 && key1.E == key2.E
+}
+
+/*
 *
 
 	FindLocaleBalanceOf -  Find The Balanace  of key   in  a Block
@@ -110,15 +115,97 @@ func (b *BlockCoinEntity) MineBlock(validator rsa.PublicKey, previousBlock Block
 */
 func (blockCoin BlockCoinEntity) FindLocaleBalanceOf(key rsa.PublicKey, sumNotify chan float64) {
 	var sum float64
+	var zero rsa.PublicKey
 	for _, t := range blockCoin.Transactions {
-		if t.BillDetails.Bill.From.Address == key {
-			sum -= t.Amount
+		from := t.BillDetails.Bill.From.Address
+		to := t.BillDetails.Bill.To.Address
+		if zero != from {
+			if equalPublicKeys(&from, &key) {
+				sum -= t.Amount
+			}
 		}
-		if t.BillDetails.Bill.To.Address == key {
+		if equalPublicKeys(&to, &key) {
 			sum += t.Amount
 		}
 	}
 	sumNotify <- sum
+}
+func (b *BlockCoinEntity) GetTransactions(from, twoWay bool, keys []rsa.PublicKey, times []int64) []TransactionCoins {
+	var list []TransactionCoins
+	add := func(t TransactionCoins) {
+		if len(times) == 0 {
+			list = append(list, t)
+		} else if len(times) == 1 {
+			created := t.BillDetails.Created_at
+			if created >= times[0] {
+				list = append(list, t)
+			}
+		} else if len(times) >= 2 {
+			created := t.BillDetails.Created_at
+			if created >= times[0] && created <= times[1] {
+				list = append(list, t)
+			}
+		}
+	}
+	var zero rsa.PublicKey
+	if len(keys) == 0 {
+		for _, t := range b.Transactions {
+			add(t)
+		}
+	} else if len(keys) == 1 {
+		if twoWay {
+			key := keys[0]
+			for _, t := range b.Transactions {
+				from := t.BillDetails.Bill.From.Address
+				to := t.BillDetails.Bill.To.Address
+				if zero != from {
+					if equalPublicKeys(&key, &from) {
+						add(t)
+					} else if equalPublicKeys(&key, &to) {
+						add(t)
+					}
+				} else if equalPublicKeys(&key, &to) {
+					add(t)
+				}
+			}
+		} else if from {
+			key := keys[0]
+			for _, t := range b.Transactions {
+				from := t.BillDetails.Bill.From.Address
+				if zero != from {
+					if equalPublicKeys(&key, &from) {
+						add(t)
+					}
+				}
+			}
+		} else {
+			key := keys[0]
+			for _, t := range b.Transactions {
+				to := t.BillDetails.Bill.To.Address
+				if equalPublicKeys(&key, &to) {
+					add(t)
+				}
+			}
+		}
+	} else {
+		fromKey := keys[0]
+		toKey := keys[1]
+		for _, t := range b.Transactions {
+			from := t.BillDetails.Bill.From.Address
+			to := t.BillDetails.Bill.To.Address
+			if zero != from {
+
+				if equalPublicKeys(&fromKey, &from) && equalPublicKeys(&toKey, &to) {
+					add(t)
+				} else if equalPublicKeys(&fromKey, &to) && equalPublicKeys(&toKey, &from) && twoWay {
+					add(t)
+				}
+			}
+		}
+
+	}
+	return list
+
 }
 
 type BlockMessage struct {
@@ -133,9 +220,6 @@ func (block *BlockMessage) Genesis(Validator rsa.PublicKey, Parent, Current stri
 }
 func (b *BlockMessage) MineBlock(validator rsa.PublicKey, previousBlock Block, logger Logger.LoggerService, hasher Hasher.HashService) error {
 	return b.BlockEntity.MineBlock(validator, previousBlock, logger, hasher)
-}
-func equalPublicKeys(key1, key2 *rsa.PublicKey) bool {
-	return key1.N.Cmp(key2.N) == 0 && key1.E == key2.E
 }
 func (b *BlockMessage) GetTransactions(from, twoWay bool, keys []rsa.PublicKey, times []int64) []TransactionMsg {
 	var list []TransactionMsg
@@ -156,7 +240,9 @@ func (b *BlockMessage) GetTransactions(from, twoWay bool, keys []rsa.PublicKey, 
 	}
 
 	if len(keys) == 0 {
-		return nil
+		for _, t := range b.Transactions {
+			add(t)
+		}
 	} else if len(keys) == 1 {
 		if twoWay {
 			key := keys[0]

@@ -1,7 +1,6 @@
 package TransactionManager
 
 import (
-	"FindBalance"
 	"Logger"
 	"Service"
 	"WalletAndTransactions"
@@ -9,7 +8,6 @@ import (
 	"entitys"
 	"errors"
 	"fmt"
-	"log"
 )
 
 const TransactionManagerServiceName = "TransactionManagerService"
@@ -27,7 +25,7 @@ type TransactionManagerService interface {
 type TransactionManager struct {
 	WalletServiceInstance      *WalletAndTransactions.WalletStructV1Implementation
 	LoggerServiceInstance      Logger.LoggerService
-	FindBalanceServiceInstance FindBalance.BalanceService
+	FindBalanceServiceInstance WalletAndTransactions.BalanceService
 }
 
 const abbortTemplate = "Abbort due: %s"
@@ -63,7 +61,6 @@ func (transactionManager *TransactionManager) Construct() error {
 
 // Transfer  Money
 func (transactionManager TransactionManager) TransferMoney(to rsa.PublicKey, amount float64) (entitys.TransactionCoinSet, error) {
-	log.Println("hello")
 	err := transactionManager.unValidService()
 	var zeroSet entitys.TransactionCoinSet
 	if err != nil {

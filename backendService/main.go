@@ -63,7 +63,7 @@ func main() {
 	port, workers, coordinator, curi, muri, id := GetEnviroments()
 	fmt.Println(workers, coordinator, curi)
 	serverPort := fmt.Sprintf(":%d", port)
-	services.BootOrDie(id, curi, muri, coordinator, workers)
+	services.BootOrDie(id, curi, muri, coordinator, workers, 2.0, 0.5)
 	setUpServer(serverPort, coordinator)
 }
 

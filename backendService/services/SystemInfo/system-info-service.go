@@ -28,11 +28,12 @@ type SystemInfoService interface {
 	AddWorker(body entitys.ClientRequestBody) error
 	IsFull() bool
 	BroadCast(sFm, sFc float64) error
-	Consume() error
+	Consume() (error, float64, float64)
 	IsOk() bool
 	GetWorkers() []rsa.PublicKey
 	NodeDetails(key rsa.PublicKey) (entitys.ClientInfo, int)
 	Who(index int) (rsa.PublicKey, error)
+	ClientList(key rsa.PublicKey) ([]entitys.ClientInfo, int)
 }
 type SystemInfoProviders struct {
 	LoggerService   Logger.LoggerService
@@ -46,6 +47,14 @@ const serviceName string = "System-Info-Service"
 const ErrNoProvider string = "There  is no '%s' provider for  the service"
 const ErrNoConstructed string = "The   provider is not constructed"
 const ErrWorkerListFull string = "The   Workers  slice  next index is  %d  but size %d "
+
+func (s *SystemInfoImpl) IsFull() bool {
+	var rsp bool
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	rsp = s.index == s.ExpectedWorkers
+	return rsp
+}
 
 /*
 *
@@ -97,12 +106,6 @@ type SystemInfoImpl struct {
 	ExpectedWorkers int
 	Coordinator     bool
 	ok              bool
-}
-
-func (s *SystemInfoImpl) P() {
-	for _, data := range s.Clients {
-		fmt.Println(data)
-	}
 }
 
 /*
@@ -163,28 +166,13 @@ func (s *SystemInfoImpl) AddWorker(body entitys.ClientRequestBody) error {
 	}
 	s.Workers[s.index] = body.PublicKey
 	nodeDetails := entitys.ClientInfo{Id: body.Client.Id, IndexId: s.index, Uri: body.Client.Uri}
-	publicKeyBytes, err := x509.MarshalPKIXPublicKey(&body.PublicKey)
-	if err != nil {
-		log.Fatal(err)
-	}
+	publicKey := s.Workers[s.index]
+	key := getHash(publicKey)
 
-	// Hash the public key bytes using SHA-256
-	hash := sha256.Sum256(publicKeyBytes)
-
-	// Encode the hash to hex string
-	hashedPublicKey := hex.EncodeToString(hash[:])
-
-	s.Clients[hashedPublicKey] = nodeDetails
+	s.Clients[key] = nodeDetails
 	s.index++
 	logger.Log(fmt.Sprintf("Commit  adding node  with id:%s", body.Client.Id))
 	return nil
-}
-func (s *SystemInfoImpl) IsFull() bool {
-	var rsp bool
-	s.mu.Lock()
-	defer s.mu.Unlock()
-	rsp = s.index == s.ExpectedWorkers
-	return rsp
 }
 func (s *SystemInfoImpl) BroadCast(sFm, sFc float64) error {
 	if !s.Coordinator {
@@ -212,20 +200,12 @@ func (s *SystemInfoImpl) BroadCast(sFm, sFc float64) error {
 		s.mu.Unlock()
 	}
 	defer Unlock()
-
 	clients := make([]entitys.ClientRequestBody, s.ExpectedWorkers)
 	for i := 0; i < len(clients); i++ {
-		publicKeyBytes, err := x509.MarshalPKIXPublicKey(&s.Workers[i])
-		if err != nil {
-			log.Fatal(err)
-		}
+		publicKey := s.Workers[i]
+		key := getHash(publicKey)
 
-		// Hash the public key bytes using SHA-256
-		hash := sha256.Sum256(publicKeyBytes)
-
-		// Encode the hash to hex string
-		hashedPublicKey := hex.EncodeToString(hash[:])
-		row := entitys.ClientRequestBody{PublicKey: s.Workers[i], Client: s.Clients[hashedPublicKey]}
+		row := entitys.ClientRequestBody{PublicKey: s.Workers[i], Client: s.Clients[key]}
 		clients[i] = row
 	}
 	var payload entitys.RabbitMqSystemInfoPack
@@ -233,6 +213,7 @@ func (s *SystemInfoImpl) BroadCast(sFm, sFc float64) error {
 	payload.ExpectedWorkers = s.ExpectedWorkers
 	payload.ScaleFactorMsg = sFm
 	payload.ScaleFactorCoin = sFc
+
 	err = lagoudaki.BroadCastSystemInfo(payload)
 	if err != nil {
 		logger.Error(fmt.Sprintf("Abbort due: %s", err.Error()))
@@ -242,12 +223,12 @@ func (s *SystemInfoImpl) BroadCast(sFm, sFc float64) error {
 	return nil
 
 }
-func (s *SystemInfoImpl) Consume() error {
+func (s *SystemInfoImpl) Consume() (error, float64, float64) {
 	providers := &s.Providers
 
 	err := providers.valid()
 	if err != nil {
-		return err
+		return err, 0, 0
 	}
 	logger := providers.LoggerService
 	lagoudaki := providers.RabbitMqService
@@ -259,25 +240,27 @@ func (s *SystemInfoImpl) Consume() error {
 	if s.Coordinator {
 		logger.Log("Commit  Consuming System Info")
 		s.ok = true
-		return nil
+		return nil, info.ScaleFactorMsg, info.ScaleFactorCoin
 	}
 	s.ExpectedWorkers = info.ExpectedWorkers
 	err = s.Construct()
+
 	if err != nil {
 		logger.Fatal(err.Error())
-		return err
+		return err, 0, 0
 	}
 	for _, body := range info.Clients {
+		log.Println(body)
 		err = s.AddWorker(body)
 		if err != nil {
 			logger.Fatal(err.Error())
-			return err
+			return err, 0, 0
 		}
 	}
-	log.Println(s.Clients)
+
 	s.ok = true
 	logger.Log("Commit  Consuming System Info")
-	return nil
+	return nil, info.ScaleFactorMsg, info.ScaleFactorCoin
 
 }
 func (s *SystemInfoImpl) GetWorkers() []rsa.PublicKey {
@@ -288,16 +271,7 @@ func (s *SystemInfoImpl) IsOk() bool {
 	return s.ok
 }
 func (s *SystemInfoImpl) NodeDetails(key rsa.PublicKey) (entitys.ClientInfo, int) {
-	publicKeyBytes, err := x509.MarshalPKIXPublicKey(&key)
-	if err != nil {
-		log.Fatal(err)
-	}
-
-	// Hash the public key bytes using SHA-256
-	hash := sha256.Sum256(publicKeyBytes)
-
-	// Encode the hash to hex string
-	hashedPublicKey := hex.EncodeToString(hash[:])
+	hashedPublicKey := getHash(key)
 	return s.Clients[hashedPublicKey], len(s.Workers)
 }
 func (s *SystemInfoImpl) Who(index int) (rsa.PublicKey, error) {
@@ -307,4 +281,27 @@ func (s *SystemInfoImpl) Who(index int) (rsa.PublicKey, error) {
 	}
 	key = s.Workers[index]
 	return key, nil
+}
+
+func (s *SystemInfoImpl) ClientList(key rsa.PublicKey) ([]entitys.ClientInfo, int) {
+	var list []entitys.ClientInfo
+	hashedPublicKey := getHash(key)
+	for key, info := range s.Clients {
+		if key != hashedPublicKey {
+			list = append(list, info)
+
+		}
+	}
+	return list, len(list)
+
+}
+func getHash(key rsa.PublicKey) string {
+	publicKeyBytes, err := x509.MarshalPKIXPublicKey(&key)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	// Hash the public key bytes using SHA-256
+	hash := sha256.Sum256(publicKeyBytes)
+	return hex.EncodeToString(hash[:])
 }

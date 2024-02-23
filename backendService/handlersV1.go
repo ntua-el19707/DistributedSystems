@@ -1,6 +1,8 @@
 package main
 
 import (
+	"Inbox"
+	"WalletAndTransactions"
 	"crypto/rsa"
 	"encoding/json"
 	"entitys"
@@ -50,6 +52,29 @@ func nodeDetailsV1(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
+//-- node details --
+/**
+clientsV1 - test healthiness of process
+ @Param  w http.ResponseWriter
+ @Param  r * http.Request
+*/
+func clientsV1(w http.ResponseWriter, r *http.Request) {
+	switch r.Method {
+	case http.MethodGet:
+		type rsp struct {
+			Clients []entitys.ClientInfo `json:"clients"`
+			Total   int                  `json:"total"`
+		}
+		var response rsp
+		response.Clients, response.Total = services.SystemInfoService.ClientList(services.WalletService.GetPub())
+		jsonBuilder(w, http.StatusOK, response)
+	default:
+		//methods not  implemented
+		message := fmt.Sprintf(httpErrorResponseNotImplemented, r.Method, r.URL.Path)
+		jsonErrorBuilder(w, http.StatusMethodNotAllowed, message)
+	}
+}
+
 //-- Register --
 /**
   registerV1 - registerNode
@@ -78,7 +103,7 @@ func registerV1(w http.ResponseWriter, r *http.Request) {
 				log.Fatal(err.Error())
 			}
 
-			err = services.SystemInfoService.Consume()
+			err, _, _ = services.SystemInfoService.Consume()
 			if err != nil {
 				jsonErrorBuilder(w, http.StatusInternalServerError, err.Error())
 				log.Fatal(err.Error())
@@ -161,6 +186,36 @@ func sendAndReceicedV1(w http.ResponseWriter, r *http.Request) {
 /*
 *
 
+	allMsgV1 - test healthiness of process
+	@Param  w http.ResponseWriter
+	@Param  r * http.Request
+*/
+func allMsgV1(w http.ResponseWriter, r *http.Request) {
+	switch r.Method {
+	case http.MethodGet:
+		var times []int64
+		err, list := services.InboxService.All(times)
+		if err != nil {
+			jsonErrorBuilder(w, http.StatusBadRequest, err.Error())
+			return
+		}
+		type rsp struct {
+			Transactions Inbox.Inbox        `json:"transactions"`
+			NodeDetails  entitys.ClientInfo `json:"nodeDetails"`
+		}
+		var response rsp
+		response.Transactions = list
+		response.NodeDetails, _ = services.SystemInfoService.NodeDetails(services.WalletService.GetPub())
+		jsonBuilder(w, http.StatusOK, response)
+	default:
+		message := fmt.Sprintf(httpErrorResponseNotImplemented, r.Method, r.URL.Path)
+		jsonErrorBuilder(w, http.StatusMethodNotAllowed, message)
+	}
+}
+
+/*
+*
+
 	inboxV1 - test healthiness of process
 	@Param  w http.ResponseWriter
 	@Param  r * http.Request
@@ -175,7 +230,14 @@ func inboxV1(w http.ResponseWriter, r *http.Request) {
 			jsonErrorBuilder(w, http.StatusBadRequest, err.Error())
 			return
 		}
-		jsonBuilder(w, http.StatusOK, list)
+		type rsp struct {
+			Transactions Inbox.Inbox        `json:"transactions"`
+			NodeDetails  entitys.ClientInfo `json:"nodeDetails"`
+		}
+		var response rsp
+		response.Transactions = list
+		response.NodeDetails, _ = services.SystemInfoService.NodeDetails(services.WalletService.GetPub())
+		jsonBuilder(w, http.StatusOK, response)
 	default:
 		message := fmt.Sprintf(httpErrorResponseNotImplemented, r.Method, r.URL.Path)
 		jsonErrorBuilder(w, http.StatusMethodNotAllowed, message)
@@ -199,7 +261,14 @@ func SendMsgV1(w http.ResponseWriter, r *http.Request) {
 			jsonErrorBuilder(w, http.StatusBadRequest, err.Error())
 			return
 		}
-		jsonBuilder(w, http.StatusOK, list)
+		type rsp struct {
+			Transactions Inbox.Inbox        `json:"transactions"`
+			NodeDetails  entitys.ClientInfo `json:"nodeDetails"`
+		}
+		var response rsp
+		response.Transactions = list
+		response.NodeDetails, _ = services.SystemInfoService.NodeDetails(services.WalletService.GetPub())
+		jsonBuilder(w, http.StatusOK, response)
 
 	case http.MethodPost:
 		me, total := services.SystemInfoService.NodeDetails(services.WalletService.GetPub())
@@ -226,20 +295,39 @@ func SendMsgV1(w http.ResponseWriter, r *http.Request) {
 		jsonErrorBuilder(w, http.StatusMethodNotAllowed, message)
 	}
 }
+func TransactionsV1(w http.ResponseWriter, r *http.Request) {
+	switch r.Method {
+	case http.MethodGet:
+		transactions := services.FindBalanceService.GetTransactions([]rsa.PublicKey{services.WalletService.GetPub()}, []int64{})
+		type rsp struct {
+			Transactions WalletAndTransactions.TransactionListCoin `json:"transactions"`
+			NodeDetails  entitys.ClientInfo                        `json:"nodeDetails"`
+		}
+		var response rsp
+		response.Transactions = transactions
+		response.NodeDetails, _ = services.SystemInfoService.NodeDetails(services.WalletService.GetPub())
+		jsonBuilder(w, http.StatusOK, response)
+
+	default:
+		//methods not  implemented
+		message := fmt.Sprintf(httpErrorResponseNotImplemented, r.Method, r.URL.Path)
+		jsonErrorBuilder(w, http.StatusMethodNotAllowed, message)
+	}
+}
 
 func balanceV1(w http.ResponseWriter, r *http.Request) {
 	switch r.Method {
 	case http.MethodGet:
-
+		amount := services.FindBalanceService.FindBalance(services.WalletService.GetPub())
 		/*balance, err := services.BlockChainCoinsService.FindBalance()
 		if err != nil {
 			jsonErrorBuilder(w, http.StatusInternalServerError, err.Error())
 			return
-		}
-		type rsp struct {
-			Balance float64 `json:"available balance"`
 		}*/
-		jsonBuilder(w, http.StatusOK, struct{}{})
+		type rsp struct {
+			Balance float64 `json:"availableBalance"`
+		}
+		jsonBuilder(w, http.StatusOK, rsp{Balance: amount})
 
 	default:
 		//methods not  implemented

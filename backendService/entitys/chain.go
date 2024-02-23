@@ -12,6 +12,7 @@ const ErrTransactionListIsNorFullYet string = "Tranasaction List of size  %d  in
 
 // Block Chain  [] blockCoinEntity
 type BlockChainCoins []BlockCoinEntity
+type BlockChainMessage []BlockMessage
 
 /*
 *
@@ -68,8 +69,40 @@ func (chain *BlockChainCoins) InsertNewBlock(logger Logger.LoggerService, hasher
 func (chain *BlockChainCoins) InsertTransactions(transactions []TransactionCoins) {
 	(*chain)[len(*chain)-1].Transactions = append((*chain)[len(*chain)-1].Transactions, transactions...)
 }
+func (chain *BlockChainCoins) FindBalance(key rsa.PublicKey) float64 {
+	sum := float64(0)
+	total := len(*chain)
+	collector := make(chan float64, total)
+	for i := 0; i < total; i++ {
+		(*chain)[i].FindLocaleBalanceOf(key, collector)
+	}
+	for i := 0; i < total; i++ {
+		blockSum := <-collector
+		sum += blockSum
+	}
+	return sum
+}
 
-type BlockChainMessage []BlockMessage
+func (chain *BlockChainCoins) GetTransactions(from, twoWay bool, keys []rsa.PublicKey, times []int64) []TransactionCoins {
+	list := make([]TransactionCoins, 0)
+	total := len(*chain)
+	collector := make(chan []TransactionCoins, total)
+	executor := func(Block BlockCoinEntity) {
+		subList := Block.GetTransactions(from, twoWay, keys, times)
+		collector <- subList
+	}
+	for i := 0; i < total; i++ {
+		//	subList := (*chain)[i].GetTransactions(from, twoWay, keys, times)
+		//	list = append(list, subList...)
+		go executor((*chain)[i])
+	}
+	for i := 0; i < total; i++ {
+		subList := <-collector
+		list = append(list, subList...)
+
+	}
+	return list
+}
 
 /*
 *
@@ -113,22 +146,25 @@ func (chain *BlockChainMessage) InsertNewBlock(logger Logger.LoggerService, hash
 	return nil
 }
 func (chain *BlockChainMessage) GetTransactions(from, twoWay bool, keys []rsa.PublicKey, times []int64) []TransactionMsg {
-	var list []TransactionMsg
+
+	list := make([]TransactionMsg, 0)
 	total := len(*chain)
-
 	collector := make(chan []TransactionMsg, total)
-
-	executor := func(block BlockMessage) {
-		subList := block.GetTransactions(from, twoWay, keys, times)
+	executor := func(Block BlockMessage) {
+		subList := Block.GetTransactions(from, twoWay, keys, times)
 		collector <- subList
 	}
 	for i := 0; i < total; i++ {
+		//	subList := (*chain)[i].GetTransactions(from, twoWay, keys, times)
+		//	list = append(list, subList...)
 		go executor((*chain)[i])
 	}
 	for i := 0; i < total; i++ {
 		subList := <-collector
 		list = append(list, subList...)
+
 	}
+
 	return list
 }
 func (chain *BlockChainMessage) InsertTransactions(transaction TransactionMsg) {

@@ -53,7 +53,7 @@ func partition(inbox []InboxRecord, low, high int) int {
 	pivot := inbox[high].Time
 	i := low - 1
 	for j := low; j < high; j++ {
-		if inbox[j].Time < pivot {
+		if inbox[j].Time > pivot {
 			i++
 			inbox[i], inbox[j] = inbox[j], inbox[i]
 		}
@@ -64,7 +64,7 @@ func partition(inbox []InboxRecord, low, high int) int {
 
 type InboxProviders struct {
 	LoggerService     Logger.LoggerService
-	BlockChainService WalletAndTransactions.BlockChainMsgImpl
+	BlockChainService *WalletAndTransactions.BlockChainMsgImpl
 	SystemInfoService SystemInfo.SystemInfoService
 }
 
@@ -97,6 +97,7 @@ func (p *InboxProviders) valid() error {
 type InboxService interface {
 	Service.Service
 	Send(keys []rsa.PublicKey, times []int64) (error, Inbox)
+	All(times []int64) (error, Inbox)
 	Receive(keys []rsa.PublicKey, times []int64) (error, Inbox)
 	SendAndReceived(keys []rsa.PublicKey, times []int64) (error, Inbox)
 }
@@ -107,6 +108,18 @@ type InboxImpl struct {
 
 func (service *InboxImpl) Construct() error {
 	return service.Providers.Construct()
+}
+func (service *InboxImpl) All(times []int64) (error, Inbox) {
+	err := service.Providers.valid()
+	if err != nil {
+		return err, nil
+	}
+	keys := make([]rsa.PublicKey, 0)
+	transactions := service.Providers.BlockChainService.GetTransactions(true, false, keys, times)
+	var inbox Inbox
+	inbox.Map(transactions, service.Providers.SystemInfoService)
+	inbox.Sort()
+	return nil, inbox
 }
 func (service *InboxImpl) Send(keys []rsa.PublicKey, times []int64) (error, Inbox) {
 	err := service.Providers.valid()

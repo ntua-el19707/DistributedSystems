@@ -20,9 +20,9 @@ const connectRouterMessage = "The  router '%s' is  connected to '%s' router  "
 func setUpMainRouter(s *http.ServeMux, c bool) {
 	log.Printf(setUpRouteMessage, "/")
 	//s.HandleFunc("/", defaultEmptyHttpController)
-	 staticDir := "./staticServer/browser"
-    fs := http.FileServer(http.Dir(staticDir))
- s.Handle("/", http.StripPrefix("/", fs))
+	staticDir := "./staticServer/browser"
+	fs := http.FileServer(http.Dir(staticDir))
+	s.Handle("/", http.StripPrefix("/", fs))
 
 	//set api
 	api := http.NewServeMux()
@@ -78,11 +78,19 @@ func setRouterForV1(v1 *http.ServeMux, prefixV1 string, c bool) {
 	v1.HandleFunc("/send", SystemInitilize(SendMsgV1))
 	log.Printf(setUpRouteMessage, fmt.Sprintf("%s/NodeDetails", prefixV1))
 	v1.HandleFunc("/NodeDetails", SystemInitilize(nodeDetailsV1))
+	log.Printf(setUpRouteMessage, fmt.Sprintf("%s/NodeDetails/Clients", prefixV1))
+	v1.HandleFunc("/NodeDetails/Clients", SystemInitilize(clientsV1))
 	log.Printf(setUpRouteMessage, fmt.Sprintf("%s/inbox", prefixV1))
 	v1.HandleFunc("/inbox", SystemInitilize(inboxV1))
+	log.Printf(setUpRouteMessage, fmt.Sprintf("%s/allMsg", prefixV1))
+	v1.HandleFunc("/allMsg", SystemInitilize(allMsgV1))
+
 	log.Printf(setUpRouteMessage, fmt.Sprintf("%s/inboxAndSent", prefixV1))
 	v1.HandleFunc("/inboxAndSent", SystemInitilize(sendAndReceicedV1))
+	log.Printf(setUpRouteMessage, fmt.Sprintf("%s/balance", prefixV1))
 	v1.HandleFunc("/balance", balanceV1)
+	log.Printf(setUpRouteMessage, fmt.Sprintf("%s/transactions", prefixV1))
+	v1.HandleFunc("/transactions", TransactionsV1)
 }
 
 func SystemInitilize(next http.HandlerFunc) http.HandlerFunc {
