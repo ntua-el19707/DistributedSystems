@@ -19,14 +19,14 @@ type BlockChainMessage []BlockMessage
 
 	Genesis -  Genesis a  new Chain
 */
-func (chain *BlockChainCoins) ChainGenesis(logger Logger.LoggerService, hasher Hasher.HashService, Validator rsa.PublicKey, shiftTime int64) {
+func (chain *BlockChainCoins) ChainGenesis(logger Logger.LoggerService, hasher Hasher.HashService, Validator rsa.PublicKey, shiftTime int64, capicity, workers int, perNode float64) {
 	logger.Log("Start  creating a  new  chain -- GENESIS --  ")
 	parent := hasher.ParrentOFall()
 	current := hasher.InstantHash(shiftTime)
 	var empty BlockChainCoins
 	*chain = empty
 	genessisBlock := &BlockCoinEntity{}
-	genessisBlock.Genesis(Validator, parent, current, logger)
+	genessisBlock.Genesis(Validator, parent, current, capicity, workers, perNode, logger)
 	*chain = append(*chain, *genessisBlock)
 	logger.Log("Commit  creating a  new  chain -- GENESIS --  ")
 }
@@ -109,14 +109,14 @@ func (chain *BlockChainCoins) GetTransactions(from, twoWay bool, keys []rsa.Publ
 
 	Genesis -  Genesis a  new Chain
 */
-func (chain *BlockChainMessage) ChainGenesis(logger Logger.LoggerService, hasher Hasher.HashService, Validator rsa.PublicKey, shiftTime int64) {
+func (chain *BlockChainMessage) ChainGenesis(logger Logger.LoggerService, hasher Hasher.HashService, Validator rsa.PublicKey, shiftTime int64, capicity int) {
 	logger.Log("Start  creating a  new  chain -- GENESIS --  ")
 	parent := hasher.ParrentOFall()
 	current := hasher.InstantHash(shiftTime)
 	var empty BlockChainMessage
 	*chain = empty
 	genessisBlock := &BlockMessage{}
-	genessisBlock.Genesis(Validator, parent, current, logger)
+	genessisBlock.Genesis(Validator, parent, current, capicity, logger)
 	*chain = append(*chain, *genessisBlock)
 	logger.Log("Commit  creating a  new  chain -- GENESIS --  ")
 }

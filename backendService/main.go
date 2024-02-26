@@ -18,7 +18,7 @@ func Fall(err error) {
 		log.Fatal(err.Error())
 	}
 }
-func GetEnviroments() (int, int, bool, string, string, string) {
+func GetEnviroments() (int, int, bool, string, string, string, string) {
 	err := godotenv.Load()
 	if err != nil {
 		log.Fatalf("Could  not  load  enviroment  varibales  due to %v", err)
@@ -49,9 +49,29 @@ func GetEnviroments() (int, int, bool, string, string, string) {
 	host = fmt.Sprintf("http://%s:%d", host, portC)
 	me = fmt.Sprintf("http://%s:%d", me, serverPort)
 	node := os.Getenv("nodeId")
+	rabbitMqUri := os.Getenv("rabbitMQ")
 
-	return serverPort, workers, coordinator, host, me, node
+	return serverPort, workers, coordinator, host, me, node, rabbitMqUri
 
+}
+func GetScaleFactors() (float64, float64) {
+	scaleFactorMsg, err := strconv.ParseFloat(os.Getenv("scaleFactorMsg"), 64)
+	Fall(err)
+	scaleFactorCoin, err := strconv.ParseFloat(os.Getenv("scaleFactorCoin"), 64)
+	Fall(err)
+	return scaleFactorMsg, scaleFactorCoin
+
+}
+func GetCapicitys() (int, int) {
+	capicityBlockMsg, err := strconv.Atoi(os.Getenv("CapicityBlockMsg"))
+	Fall(err)
+	capicityBlockCoin, err := strconv.Atoi(os.Getenv("CapicityBlockCoin"))
+	Fall(err)
+	if capicityBlockCoin%2 == 1 {
+		err = errors.New("Cappicity for  block Coin must be  even ")
+	}
+	Fall(err)
+	return capicityBlockMsg, capicityBlockCoin
 }
 
 /*
@@ -60,10 +80,18 @@ func GetEnviroments() (int, int, bool, string, string, string) {
 	main - function  of  the project START
 */
 func main() {
-	port, workers, coordinator, curi, muri, id := GetEnviroments()
-	fmt.Println(workers, coordinator, curi)
+	port, workers, coordinator, curi, muri, id, rabbitMqUri := GetEnviroments()
+	var sFm, sFc, perNode float64
+	var capicityMsg, capicityCoin int
+	if coordinator {
+		sFm, sFc = GetScaleFactors()
+		capicityMsg, capicityCoin = GetCapicitys()
+		var err error
+		perNode, err = strconv.ParseFloat(os.Getenv("perNode"), 64)
+		Fall(err)
+	}
 	serverPort := fmt.Sprintf(":%d", port)
-	services.BootOrDie(id, curi, muri, coordinator, workers, 2.0, 0.5)
+	services.BootOrDie(id, curi, muri, rabbitMqUri, coordinator, workers, capicityMsg, capicityCoin, sFm, sFc, perNode)
 	setUpServer(serverPort, coordinator)
 }
 

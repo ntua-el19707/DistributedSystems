@@ -80,15 +80,13 @@ type BlockCoinEntity struct {
 	@Param Current string
 	@Param logger  Logger.LoggerService
 */
-func (block *BlockCoinEntity) Genesis(Validator rsa.PublicKey, Parent, Current string, logger Logger.LoggerService) {
+func (block *BlockCoinEntity) Genesis(Validator rsa.PublicKey, Parent, Current string, capicity, workers int, perNode float64, logger Logger.LoggerService) {
 	//Genesis The BlockEnity
-	blockSize := 6
+	blockSize := capicity
 	block.BlockEntity.Genesis(Validator, Parent, Current, blockSize, logger)
 	/*	if block.perNode == 0 {i
 		block.perNode = 1000.0
 	}*/
-	workers := 5             //block.workers
-	perNode := float64(1000) // block.perNode
 	total := float64(workers) * perNode
 	block.Transactions = make([]TransactionCoins, 2)
 	bill := BillingInfo{To: Client{Address: Validator}}
@@ -213,8 +211,8 @@ type BlockMessage struct {
 	Transactions []TransactionMsg `json:"transactions"`
 }
 
-func (block *BlockMessage) Genesis(Validator rsa.PublicKey, Parent, Current string, logger Logger.LoggerService) {
-	blockSize := 5
+func (block *BlockMessage) Genesis(Validator rsa.PublicKey, Parent, Current string, capicity int, logger Logger.LoggerService) {
+	blockSize := capicity
 	block.BlockEntity.Genesis(Validator, Parent, Current, blockSize, logger)
 	logger.Log(fmt.Sprintf("Created  Genesis Block Message  %s", block.BlockEntity.CurrentHash))
 }

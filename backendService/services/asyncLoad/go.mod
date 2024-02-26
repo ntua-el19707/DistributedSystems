@@ -2,6 +2,10 @@ module github.com/ntua-el19707/DistributedSystems/backendService/services/asyncL
 
 go 1.21.3
 
+replace SystemInfo v0.0.0 => ../SystemInfo
+
+require SystemInfo v0.0.0
+
 replace MessageSystem v0.0.0 => ../../MessageSystem
 
 require MessageSystem v0.0.0
@@ -29,10 +33,6 @@ require RabbitMqService v0.0.0
 replace WalletAndTransactions v0.0.0 => ../WalletAndTransactions
 
 require WalletAndTransactions v0.0.0
-
-replace FindBalance v0.0.0 => ../FindBalance
-
-require FindBalance v0.0.0
 
 replace Lottery v0.0.0 => ../Lottery
 

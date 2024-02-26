@@ -12,7 +12,6 @@ type RabbitMqService interface {
 	Service.Service
 	ConsumerTransactionsCoins()
 	ConsumerTransactionsMsg()
-
 	GetChannelTransactionCoin() chan entitys.TransactionCoinSet
 	GetChannelTransactionMsg() chan entitys.TransactionMessageSet
 	PublishBlockCoin(block entitys.BlockCoinMessageRabbitMq) error
@@ -205,29 +204,45 @@ func (service *RabbitMqImpl) ConsumeNextSystemInfo() entitys.RabbitMqSystemInfoP
 // Mock
 type MockRabbitMqImpl struct {
 	Channel                       chan entitys.TransactionCoinSet
+	ChannelTransactionMsg         chan entitys.TransactionMessageSet
 	Blocks                        []entitys.BlockCoinMessageRabbitMq
 	Block                         entitys.BlockCoinMessageRabbitMq
 	BlockMsg                      entitys.BlockMessageMessageRabbitMq
+	BlockCoinRsp                  entitys.BlockCoinMessageRabbitMq
 	BlockMsgRsp                   entitys.BlockMessageMessageRabbitMq
+	SystemInfo                    entitys.RabbitMqSystemInfoPack
+	CallBroadCastSystemInfoWith   []entitys.RabbitMqSystemInfoPack
+	CallPublishTractionMsgSetWith []entitys.TransactionMessageSet
 	ErrPublishBlockMsg            error
 	ErrPublishBlockCoin           error
 	ErrPublishTransactionCoin     error
+	ErrPublishTransactionMsg      error
+	ErrBroadCastSystemInfo        error
 	TransactionSetCoin            entitys.TransactionCoinSet
 	index                         int
+	CallConsumerTransactionsCoins int
+	CallGetChannelTransactionCoin int
+	CallBroadCastSystemInfo       int
+	CallPublishTractionMsgSet     int
+	CallConsumeNextSystemInfo     int
+	CallConsumerTransactionsMsg   int
 	CallPublishBlock              int
 	CallConsumeBlock              int
 	CallPublishBlockMsg           int
 	CallConsumeBlockMsg           int
+	CallConsumeBlockCoin          int
 	CallPublishTransactionCoinSet int
+	CallGetTransactionMsgChannel  int
 }
 
 func (mock *MockRabbitMqImpl) Construct() error {
 	return nil
 }
 func (mock *MockRabbitMqImpl) ConsumerTransactionsCoins() {
-
+	mock.CallConsumerTransactionsCoins++
 }
 func (mock *MockRabbitMqImpl) GetChannelTransactionCoin() chan entitys.TransactionCoinSet {
+	mock.CallGetChannelTransactionCoin++
 	return mock.Channel
 }
 func (mock *MockRabbitMqImpl) ConsumeBlock() chan entitys.TransactionCoinSet {
@@ -261,4 +276,31 @@ func (mock *MockRabbitMqImpl) PublishTractioncoinSet(t entitys.TransactionCoinSe
 	mock.CallPublishTransactionCoinSet++
 	mock.TransactionSetCoin = t
 	return mock.ErrPublishTransactionCoin
+}
+func (mock *MockRabbitMqImpl) ConsumeNextBlockCoin() entitys.BlockCoinMessageRabbitMq {
+	mock.CallConsumeBlockCoin++
+	return mock.BlockCoinRsp
+
+}
+func (mock *MockRabbitMqImpl) GetChannelTransactionMsg() chan entitys.TransactionMessageSet {
+	mock.CallGetTransactionMsgChannel++
+	return mock.ChannelTransactionMsg
+}
+
+func (mock *MockRabbitMqImpl) ConsumerTransactionsMsg() {
+	mock.CallConsumerTransactionsMsg++
+}
+func (mock *MockRabbitMqImpl) PublishTractionMsgSet(t entitys.TransactionMessageSet) error {
+	mock.CallPublishTractionMsgSet++
+	mock.CallPublishTractionMsgSetWith = append(mock.CallPublishTractionMsgSetWith, t)
+	return mock.ErrPublishTransactionMsg
+}
+func (mock *MockRabbitMqImpl) BroadCastSystemInfo(p entitys.RabbitMqSystemInfoPack) error {
+	mock.CallBroadCastSystemInfo++
+	mock.CallBroadCastSystemInfoWith = append(mock.CallBroadCastSystemInfoWith, p)
+	return mock.ErrBroadCastSystemInfo
+}
+func (mock *MockRabbitMqImpl) ConsumeNextSystemInfo() entitys.RabbitMqSystemInfoPack {
+	mock.CallConsumeNextSystemInfo++
+	return mock.SystemInfo
 }

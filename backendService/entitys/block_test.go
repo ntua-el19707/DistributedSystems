@@ -24,7 +24,7 @@ func TestBlock(t *testing.T) {
 		block := Block{}
 		validator := rsa.PublicKey{}
 		logger := &Logger.MockLogger{}
-		block.Genesis(validator, "1111", "2222", 6, logger)
+		block.Genesis(validator, "1111", "2222", 5, logger)
 		if block.Index != 0 || block.ParentHash != "1111" || block.CurrentHash != "2222" || block.Validator != validator {
 			t.Errorf("The  block Index %d ,  Parent %s  , Current %s  and validator  %v but got  %d_%s_%s_%v", 0, "1111", "2222", validator, block.Index, block.ParentHash, block.CurrentHash, block.Validator)
 		}
@@ -178,7 +178,7 @@ func TestForBlockMsg(t *testing.T) {
 			mockLogger := Logger.MockLogger{}
 			parrentHash := "1111"
 			currentHash := "2222"
-			block.Genesis(pkList[0], parrentHash, currentHash, &mockLogger)
+			block.Genesis(pkList[0], parrentHash, currentHash, 5, &mockLogger)
 			callExpector[rsa.PublicKey](pkList[0], block.BlockEntity.Validator, t, prefixOld, "Validator")
 			callExpector[string](parrentHash, block.BlockEntity.ParentHash, t, prefixOld, "Parent Hash")
 			callExpector[string](currentHash, block.BlockEntity.CurrentHash, t, prefixOld, "Current Hash")
@@ -193,7 +193,7 @@ func TestForBlockMsg(t *testing.T) {
 		mockLogger := Logger.MockLogger{}
 		parrentHash := "1111"
 		currentHash := "2222"
-		block.Genesis(pkList[0], parrentHash, currentHash, &mockLogger)
+		block.Genesis(pkList[0], parrentHash, currentHash, 5, &mockLogger)
 		fmt.Printf("%s  Test for Mine\n", prefixOld)
 		prefixNew := fmt.Sprintf("%s%s", prefixOld, prefix)
 		itShouldMine := func(prefixOld string) {
@@ -232,7 +232,7 @@ func TestForBlockMsg(t *testing.T) {
 			mockLogger := Logger.MockLogger{}
 			parrentHash := "1111"
 			currentHash := "2222"
-			block.Genesis(pkList[0], parrentHash, currentHash, &mockLogger)
+			block.Genesis(pkList[0], parrentHash, currentHash, 5, &mockLogger)
 			transaction := TransactionMsg{BillDetails: AToB, Msg: "hello  world"}
 			block.InsertTransaction(transaction)
 			callExpector[int](1, len(block.Transactions), t, prefixOld, "size of transaction List")
@@ -267,7 +267,7 @@ func TestBlockCoin(t *testing.T) {
 		keys, _ := keyGen(1)
 		validator := keys[0]
 		logger := &Logger.MockLogger{}
-		blockCoin.Genesis(validator, "1111", "2222", logger)
+		blockCoin.Genesis(validator, "1111", "2222", 6, 5, 1000.0, logger)
 		block := blockCoin.BlockEntity
 		if block.Index != 0 || block.ParentHash != "1111" || block.CurrentHash != "2222" || block.Validator != validator {
 			t.Errorf("The  block Index %d ,  Parent %s  , Current %s  and validator  %v but got  %d_%s_%s_%v", 0, "1111", "2222", validator, block.Index, block.ParentHash, block.CurrentHash, block.Validator)

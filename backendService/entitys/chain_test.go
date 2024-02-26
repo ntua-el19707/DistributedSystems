@@ -35,7 +35,7 @@ func TestChain(t *testing.T) {
 
 			logger := &Logger.MockLogger{}
 			hasher := &Hasher.MockHasher{InstantHashValue: "123456"}
-			chain.ChainGenesis(logger, hasher, validators[0], 0)
+			chain.ChainGenesis(logger, hasher, validators[0], 0, 6, 5, 1000.0)
 			if len(chain) != 1 {
 				t.Errorf("chain size expecte to be %d  but  got  %d", 1, len(chain))
 			}
@@ -79,7 +79,7 @@ func TestChain(t *testing.T) {
 			logger := &Logger.MockLogger{}
 			hasher := &Hasher.MockHasher{InstantHashValue: "123456"}
 			succeedInsert := func(prefixOld string) {
-				chain.ChainGenesis(logger, hasher, validators[0], 0)
+				chain.ChainGenesis(logger, hasher, validators[0], 0, 6, 5, 1000.0)
 				chain[0].BlockEntity.Capicity = 2
 				logger.Logs = make([]string, 0) // empty logger
 				block := BlockCoinEntity{BlockEntity: Block{Index: 1,
@@ -129,7 +129,7 @@ func TestChain(t *testing.T) {
 				fmt.Printf("%s it  should  insert  a valid block   \n", prefixOld)
 			}
 			FailedInsertHash := func(prefixOld string) {
-				chain.ChainGenesis(logger, hasher, validators[0], 0)
+				chain.ChainGenesis(logger, hasher, validators[0], 0, 6, 5, 1000)
 				chain[0].BlockEntity.Capicity = 2
 				logger.Logs = make([]string, 0) // empty logger
 				logger.ErrorList = make([]string, 0)
@@ -193,7 +193,7 @@ func TestChain(t *testing.T) {
 				fmt.Printf("%s it  should  failed  (hash service Valid  not  valid ) insert  an invalid block   \n", prefixOld)
 			}
 			FailedInsertIndex := func(prefixOld string) {
-				chain.ChainGenesis(logger, hasher, validators[0], 0)
+				chain.ChainGenesis(logger, hasher, validators[0], 0, 6, 5, 1000)
 				chain[0].BlockEntity.Capicity = 2
 				logger.Logs = make([]string, 0) // empty logger
 				logger.ErrorList = make([]string, 0)
@@ -257,7 +257,7 @@ func TestChain(t *testing.T) {
 				fmt.Printf("%s it  should  failed  (index not  increased by 1 ) insert  an invalid block   \n", prefixOld)
 			}
 			FailedInsertParrentHash := func(prefixOld string) {
-				chain.ChainGenesis(logger, hasher, validators[0], 0)
+				chain.ChainGenesis(logger, hasher, validators[0], 0, 6, 5, 1000.0)
 				chain[0].BlockEntity.Capicity = 2
 				logger.Logs = make([]string, 0) // empty logger
 				logger.ErrorList = make([]string, 0)
@@ -320,7 +320,7 @@ func TestChain(t *testing.T) {
 				fmt.Printf("%s it  should  failed  (parrent  hash does  not  match  ) insert  an invalid block   \n", prefixOld)
 			}
 			FailedInsertCapicity := func(prefixOld string) {
-				chain.ChainGenesis(logger, hasher, validators[0], 0)
+				chain.ChainGenesis(logger, hasher, validators[0], 0, 6, 5, 1000)
 				chain[0].BlockEntity.Capicity = 5
 				logger.Logs = make([]string, 0) // empty logger
 				logger.ErrorList = make([]string, 0)
@@ -411,7 +411,7 @@ func TestChain(t *testing.T) {
 
 				logger := &Logger.MockLogger{}
 				hasher := &Hasher.MockHasher{InstantHashValue: "123456"}
-				chain.ChainGenesis(logger, hasher, validators[0], 0)
+				chain.ChainGenesis(logger, hasher, validators[0], 0, 5)
 				callExpector[int](1, len(chain), t, prefixOld, "size  of  chain ")
 				callExpector[int](1, hasher.CallParentOfAll, t, prefixOld, "call  hash.ParrnetOfall")
 				callExpector[int](1, hasher.CallInstand, t, prefixOld, "call hash.InstantHash ")
@@ -438,7 +438,7 @@ func TestChain(t *testing.T) {
 			fmt.Printf("%s Test  Cases for insert a block to chain \n", prefixOld)
 			itShouldInsert := func(prefixOld string) {
 				var chain BlockChainMessage
-				chain.ChainGenesis(logger, hasher, validators[0], 0)
+				chain.ChainGenesis(logger, hasher, validators[0], 0, 5)
 				chain[0].Transactions = list
 				first := chain[0]
 				candidateBlock := BlockMessage{}
@@ -459,7 +459,7 @@ func TestChain(t *testing.T) {
 				itShouldFailDueToIndex := func(prefixOld string) {
 
 					var chain BlockChainMessage
-					chain.ChainGenesis(logger, hasher, validators[0], 0)
+					chain.ChainGenesis(logger, hasher, validators[0], 0, 5)
 					chain[0].Transactions = list
 					first := chain[0]
 					candidateBlock := BlockMessage{}
@@ -475,7 +475,7 @@ func TestChain(t *testing.T) {
 				}
 				itShouldFailDueToparrentHash := func(prefixOld string) {
 					var chain BlockChainMessage
-					chain.ChainGenesis(logger, hasher, validators[0], 0)
+					chain.ChainGenesis(logger, hasher, validators[0], 0, 5)
 					chain[0].Transactions = list
 					first := chain[0]
 					candidateBlock := BlockMessage{}
@@ -493,7 +493,7 @@ func TestChain(t *testing.T) {
 					hasher.CallValid = 0
 					hasher.InvalidError = "invalid hash"
 					var chain BlockChainMessage
-					chain.ChainGenesis(logger, hasher, validators[0], 0)
+					chain.ChainGenesis(logger, hasher, validators[0], 0, 5)
 					chain[0].Transactions = list
 					first := chain[0]
 					candidateBlock := BlockMessage{}
@@ -517,7 +517,7 @@ func TestChain(t *testing.T) {
 					list[2] = TransactionMsg{BillDetails: BtoA, Msg: "bannanas"}
 					list[3] = TransactionMsg{BillDetails: AtoB, Msg: "mellons"}
 					var chain BlockChainMessage
-					chain.ChainGenesis(logger, hasher, validators[0], 0)
+					chain.ChainGenesis(logger, hasher, validators[0], 0, 5)
 					chain[0].Transactions = list
 					first := chain[0]
 					candidateBlock := BlockMessage{}
@@ -548,7 +548,7 @@ func TestChain(t *testing.T) {
 			hasher := &Hasher.MockHasher{InstantHashValue: "123456"}
 			itShouldInsert := func(prefixOld string) {
 				var chain BlockChainMessage
-				chain.ChainGenesis(logger, hasher, validators[0], 0)
+				chain.ChainGenesis(logger, hasher, validators[0], 0, 5)
 				transaction := TransactionMsg{BillDetails: AtoB, Msg: "apples"}
 				chain.InsertTransactions(transaction)
 				callExpector[int](1, len(chain), t, prefixOld, "chain size")

@@ -25,14 +25,17 @@ var TransactionManagerService TransactionManager.TransactionManagerService
 var RabbitMqS RabbitMqService.RabbitMqService
 var WalletService WalletAndTransactions.WalletStructV1Implementation
 var SystemInfoService SystemInfo.SystemInfoService
-var blockChainCoinService WalletAndTransactions.BlockChainCoinsImpl
-var blockChainMsgService WalletAndTransactions.BlockChainMsgImpl
+var blockChainCoinService WalletAndTransactions.BlockChainCoinsService
+var blockChainMsgService WalletAndTransactions.BlockChainMsgService
 var InboxService Inbox.InboxService
 var FindBalanceService WalletAndTransactions.BalanceService
 var scaleFactorMsg float64
 var scaleFactorCoin float64
 
-func setQueues(node string) {
+var capicity_Msg, capicity_Coin, expectWorkers int
+var per_Node float64
+
+func setQueues(node, rabbitMqUri string) {
 	logger := Logger.Logger{ServiceName: "Set Queues And Constuct Wallet"}
 	err := logger.Construct()
 	if err != nil {
@@ -45,7 +48,7 @@ func setQueues(node string) {
 		queue = fmt.Sprintf("%s-%s", queue, node)
 		return RabbitMqService.QueueAndExchange{Queue: queue, Exchange: exchange}
 	}
-	RabbitMqUri := "amqp://v:123456@127.0.0.1:5672/"
+	RabbitMqUri := rabbitMqUri
 	TransactionCoinSetQueueExchange := genSet("transactionCoins", "TCOINS", node)
 	TransactionMsgSetQueueExchange := genSet("transactionMsg", "TMSG", node)
 	BlockMsgQueueExchange := genSet("BlockCoins", "BCOIN", node)
@@ -124,8 +127,8 @@ func providers(c bool) {
 		LotteryService:        &lottery1,
 	}
 
-	blockChainCoinService = WalletAndTransactions.BlockChainCoinsImpl{ScaleFactor: scaleFactorCoin, Services: blockProviders1, Workers: []rsa.PublicKey{WalletService.GetPub()}}
-	bootStrapOrDie(&blockChainCoinService, &logger)
+	blockChainCoinService = &WalletAndTransactions.BlockChainCoinsImpl{ScaleFactor: scaleFactorCoin, Services: blockProviders1, Workers: []rsa.PublicKey{WalletService.GetPub()}}
+	bootStrapOrDie(blockChainCoinService, &logger)
 	lottery2 := Lottery.LotteryImpl{Services: spinProviders}
 	bootStrapOrDie(&lottery2, &logger)
 	blockProviders2 := WalletAndTransactions.BlockServiceProviders{
@@ -134,28 +137,28 @@ func providers(c bool) {
 		WalletServiceInstance: &WalletService,
 		LotteryService:        &lottery2,
 	}
-	blockChainMsgService = WalletAndTransactions.BlockChainMsgImpl{ScaleFactor: scaleFactorMsg, Services: blockProviders2, Workers: []rsa.PublicKey{WalletService.GetPub()}}
-	bootStrapOrDie(&blockChainMsgService, &logger)
+	blockChainMsgService = &WalletAndTransactions.BlockChainMsgImpl{ScaleFactor: scaleFactorMsg, Services: blockProviders2, Workers: []rsa.PublicKey{WalletService.GetPub()}}
+	bootStrapOrDie(blockChainMsgService, &logger)
 	if c {
-		err = blockChainCoinService.Genesis()
+		err = blockChainCoinService.Genesis(capicity_Coin, expectWorkers, per_Node)
 
 		if err != nil {
 			logger.Fatal(err.Error())
 		}
-		err = blockChainMsgService.Genesis()
+		err = blockChainMsgService.Genesis(capicity_Msg)
 		if err != nil {
 			logger.Fatal(err.Error())
 		}
 
 		broadCastBlockCoin := entitys.BlockCoinMessageRabbitMq{
-			BlockCoin: blockChainCoinService.Chain[0],
+			BlockCoin: blockChainCoinService.RetriveChain()[0],
 		}
 		err = RabbitMqS.PublishBlockCoin(broadCastBlockCoin)
 		if err != nil {
 			logger.Fatal(err.Error())
 		}
 		broadCastBlockMsg := entitys.BlockMessageMessageRabbitMq{
-			BlockMsg: blockChainMsgService.Chain[0],
+			BlockMsg: blockChainMsgService.RetriveChain()[0],
 		}
 		err = RabbitMqS.PublishBlockMsg(broadCastBlockMsg)
 		if err != nil {
@@ -167,14 +170,14 @@ func providers(c bool) {
 	} else {
 		blockCoin := RabbitMqS.ConsumeNextBlockCoin()
 		blockMsg := RabbitMqS.ConsumeNextBlockMsg()
-		blockChainMsgService.Chain.InsertNewBlock(&logger, &hashService, blockMsg.BlockMsg)
-		blockChainCoinService.Chain.InsertNewBlock(&logger, &hashService, blockCoin.BlockCoin)
-		blockChainCoinService.Workers = SystemInfoService.GetWorkers()
-		blockChainMsgService.Workers = SystemInfoService.GetWorkers()
+		blockChainMsgService.InsertNewBlock(blockMsg.BlockMsg)
+		blockChainCoinService.InsertNewBlock(blockCoin.BlockCoin)
+		blockChainCoinService.SetWorkers(SystemInfoService.GetWorkers())
+		blockChainMsgService.SetWorkers(SystemInfoService.GetWorkers())
 		//NOW The re is  litle  a chance to fail Mine only if  internal error if err =>  commit  harakiri
 	}
 	FindBalanceService = &WalletAndTransactions.BalanceImplementation{
-		BlockChainService: &blockChainCoinService,
+		BlockChainService: blockChainCoinService,
 		SystemInfoService: SystemInfoService,
 	}
 	bootStrapOrDie(FindBalanceService, &logger)
@@ -184,13 +187,13 @@ func providers(c bool) {
 		FindBalanceServiceInstance: FindBalanceService,
 	}
 	bootStrapOrDie(TransactionManagerService, &logger)
-	InboxService = &Inbox.InboxImpl{Providers: Inbox.InboxProviders{BlockChainService: &blockChainMsgService, SystemInfoService: SystemInfoService}}
+	InboxService = &Inbox.InboxImpl{Providers: Inbox.InboxProviders{BlockChainService: blockChainMsgService, SystemInfoService: SystemInfoService}}
 	bootStrapOrDie(InboxService, &logger)
 
 	asyncProviders := asyncLoad.AsyncLoadProviders{
 		RabbitMqService:  RabbitMqS,
-		BlockCoinService: &blockChainCoinService,
-		BlockMsgService:  &blockChainMsgService,
+		BlockCoinService: blockChainCoinService,
+		BlockMsgService:  blockChainMsgService,
 	}
 
 	asyncService := asyncLoad.AsyncLoadImpl{Providers: asyncProviders}
@@ -214,8 +217,8 @@ func SetUp() {
 	if err != nil {
 		log.Fatal(err.Error())
 	}
-	blockChainCoinService.Workers = SystemInfoService.GetWorkers()
-	blockChainMsgService.Workers = SystemInfoService.GetWorkers()
+	blockChainCoinService.SetWorkers(SystemInfoService.GetWorkers())
+	blockChainMsgService.SetWorkers(SystemInfoService.GetWorkers())
 	pk := WalletService.GetPub()
 	for _, key := range SystemInfoService.GetWorkers() {
 		if !equalPublicKeys(&key, &pk) {
@@ -232,10 +235,14 @@ func SetUp() {
 	}
 
 }
-func BootOrDie(node, hostC, Me string, coordinator bool, ExpectedWorkers int, sFm, sFc float64) {
+func BootOrDie(node, hostC, Me, rabbitMqUri string, coordinator bool, ExpectedWorkers, capicityMsg, capicityCoin int, sFm, sFc, perNode float64) {
 	scaleFactorMsg = sFm
 	scaleFactorCoin = sFc
-	setQueues(node)
+	setQueues(node, rabbitMqUri)
+	capicity_Msg = capicityMsg
+	capicity_Coin = capicityCoin
+	per_Node = perNode
+	expectWorkers = ExpectedWorkers
 	registerAndSystemInfo(coordinator, ExpectedWorkers, Me, hostC, node)
 	providers(coordinator)
 }

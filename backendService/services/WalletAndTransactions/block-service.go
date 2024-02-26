@@ -73,6 +73,19 @@ func (p *BlockServiceProviders) valid() error {
 
 }
 
+// Block  Coin Service  Chain
+type BlockChainCoinsService interface {
+	Service.Service
+	Genesis(capicity, workers int, perNode float64) error
+	FindBalance(key rsa.PublicKey) float64
+	findAndLock(coins float64) (float64, error)
+	GetTransactions(from, twoWay bool, keys []rsa.PublicKey, times []int64) []entitys.TransactionCoins
+	InsertTransaction(t entitys.TransactionCoinSet) error
+	RetriveChain() entitys.BlockChainCoins
+	InsertNewBlock(block entitys.BlockCoinEntity) error
+	SetWorkers(workers []rsa.PublicKey)
+}
+
 func (service *BlockChainCoinsImpl) Construct() error {
 	err := service.Services.Construct()
 	if err != nil {
@@ -82,17 +95,33 @@ func (service *BlockChainCoinsImpl) Construct() error {
 	logger.Log("Service  Created")
 	return nil
 }
+func (service *BlockChainCoinsImpl) SetWorkers(workers []rsa.PublicKey) {
+	service.Workers = workers
+}
 
-func (service *BlockChainCoinsImpl) Genesis() error {
+func (service *BlockChainCoinsImpl) RetriveChain() entitys.BlockChainCoins {
+	return service.Chain
+}
+
+func (service *BlockChainCoinsImpl) Genesis(capicity, workers int, perNode float64) error {
 	err := service.Services.valid()
 	if err != nil {
 		return err
 	}
-	service.Chain.ChainGenesis(service.Services.LoggerService, service.Services.HashService, service.Services.WalletServiceInstance.GetPub(), 0)
+	service.Chain.ChainGenesis(service.Services.LoggerService, service.Services.HashService, service.Services.WalletServiceInstance.GetPub(), 0, capicity, workers, perNode)
 	return nil
 }
+func (service *BlockChainMsgImpl) SetWorkers(workers []rsa.PublicKey) {
+	service.Workers = workers
+}
 
-const ErrMsgNotValidator = ""
+func (service *BlockChainCoinsImpl) InsertNewBlock(block entitys.BlockCoinEntity) error {
+	var err error
+	service.mu.Lock()
+	defer service.mu.Unlock()
+	err = service.Chain.InsertNewBlock(service.Services.LoggerService, service.Services.HashService, block)
+	return err
+}
 
 func (service *BlockChainCoinsImpl) FindBalance(key rsa.PublicKey) float64 {
 	service.mu.Lock()
@@ -212,6 +241,92 @@ func (service *BlockChainCoinsImpl) InsertTransaction(t entitys.TransactionCoinS
 	return nil
 }
 
+type GetTransactionParameters struct {
+	From   bool
+	TwoWay bool
+	Keys   []rsa.PublicKey
+	Times  []int64
+}
+
+// Mock  BlockChainCoins
+type MockBlockChainCoins struct {
+	ErrConstruct               error
+	ErrGenesis                 error
+	ErrfindAndLockResponse     error
+	ErrorInsertTransaction     error
+	ErrorInsertBlock           error
+	FindBalanceResponse        float64
+	findAndLockResponse        float64
+	Transactions               []entitys.TransactionCoins
+	Chain                      entitys.BlockChainCoins
+	CallGenesis                int
+	CallRetriveChain           int
+	CallInsertNewBlock         int
+	CallFindBalance            int
+	CallfindAndLock            int
+	CallGetTransactions        int
+	CallInsertTransactions     int
+	CallInsertNewBlockWith     []entitys.BlockCoinEntity
+	CallFindBallanceWith       []rsa.PublicKey
+	CallfindAndLockWith        []float64
+	CallGetTransactionsWith    []GetTransactionParameters
+	CallInsertTransactionsWith []entitys.TransactionCoinSet
+}
+
+func (mock *MockBlockChainCoins) Construct() error {
+	return mock.ErrConstruct
+}
+func (mock *MockBlockChainCoins) SetWorkers(workers []rsa.PublicKey) {}
+func (mock *MockBlockChainCoins) RetriveChain() entitys.BlockChainCoins {
+	mock.CallRetriveChain++
+	return mock.Chain
+}
+func (mock *MockBlockChainCoins) InsertNewBlock(block entitys.BlockCoinEntity) error {
+	mock.CallInsertNewBlock++
+	mock.CallInsertNewBlockWith = append(mock.CallInsertNewBlockWith, block)
+	return mock.ErrorInsertBlock
+}
+func (mock *MockBlockChainCoins) Genesis(capicity, workers int, perNode float64) error {
+	mock.CallGenesis++
+	return mock.ErrGenesis
+}
+func (mock *MockBlockChainCoins) FindBalance(key rsa.PublicKey) float64 {
+	mock.CallFindBalance++
+	mock.CallFindBallanceWith = append(mock.CallFindBallanceWith, key)
+	return mock.FindBalanceResponse
+}
+func (mock *MockBlockChainCoins) findAndLock(coins float64) (float64, error) {
+	mock.CallfindAndLock++
+	mock.CallfindAndLockWith = append(mock.CallfindAndLockWith, coins)
+	return mock.findAndLockResponse, mock.ErrfindAndLockResponse
+
+}
+func (mock *MockBlockChainCoins) GetTransactions(from, twoWay bool, keys []rsa.PublicKey, times []int64) []entitys.TransactionCoins {
+	row := GetTransactionParameters{
+		From:   from,
+		TwoWay: twoWay,
+		Keys:   keys,
+		Times:  times,
+	}
+	mock.CallGetTransactionsWith = append(mock.CallGetTransactionsWith, row)
+	mock.CallGetTransactions++
+	return mock.Transactions
+}
+func (mock *MockBlockChainCoins) InsertTransaction(t entitys.TransactionCoinSet) error {
+	mock.CallInsertTransactions++
+	mock.CallInsertTransactionsWith = append(mock.CallInsertTransactionsWith, t)
+	return mock.ErrorInsertTransaction
+}
+
+type BlockChainMsgService interface {
+	Service.Service
+	Genesis(capicity int) error
+	GetTransactions(from, twoWay bool, keys []rsa.PublicKey, times []int64) []entitys.TransactionMsg
+	InsertTransaction(t entitys.TransactionMessageSet) error
+	RetriveChain() entitys.BlockChainMessage
+	InsertNewBlock(block entitys.BlockMessage) error
+	SetWorkers(workers []rsa.PublicKey)
+}
 type BlockChainMsgImpl struct {
 	Chain       entitys.BlockChainMessage
 	Workers     []rsa.PublicKey
@@ -229,6 +344,16 @@ func (service *BlockChainMsgImpl) Construct() error {
 	logger.Log("Service  Created")
 	return nil
 }
+func (service *BlockChainMsgImpl) RetriveChain() entitys.BlockChainMessage {
+	return service.Chain
+}
+func (service *BlockChainMsgImpl) InsertNewBlock(block entitys.BlockMessage) error {
+	var err error
+	service.mu.Lock()
+	defer service.mu.Unlock()
+	err = service.Chain.InsertNewBlock(service.Services.LoggerService, service.Services.HashService, block)
+	return err
+}
 func (service *BlockChainMsgImpl) GetTransactions(from, twoWay bool, keys []rsa.PublicKey, times []int64) []entitys.TransactionMsg {
 	logger := service.Services.LoggerService
 	service.mu.Lock()
@@ -242,12 +367,12 @@ func (service *BlockChainMsgImpl) GetTransactions(from, twoWay bool, keys []rsa.
 
 	return list
 }
-func (service *BlockChainMsgImpl) Genesis() error {
+func (service *BlockChainMsgImpl) Genesis(capicity int) error {
 	err := service.Services.valid()
 	if err != nil {
 		return err
 	}
-	service.Chain.ChainGenesis(service.Services.LoggerService, service.Services.HashService, service.Services.WalletServiceInstance.GetPub(), 0)
+	service.Chain.ChainGenesis(service.Services.LoggerService, service.Services.HashService, service.Services.WalletServiceInstance.GetPub(), 0, capicity)
 	return nil
 }
 
@@ -363,6 +488,58 @@ func (service *BlockChainMsgImpl) InsertTransaction(t entitys.TransactionMessage
 	logger.Log(fmt.Sprintf("commit insert  transaction Msg  %s", t.TransactionMessage.Transaction.BillDetails.Transaction_id))
 	return nil
 }
+
+type MockBlockChainMsg struct {
+	ErrConstruct               error
+	ErrGenesis                 error
+	ErrorInsertTransaction     error
+	ErrorInsertBlock           error
+	Transactions               []entitys.TransactionMsg
+	Chain                      entitys.BlockChainMessage
+	CallGenesis                int
+	CallInsertNewBlock         int
+	CallRetriveChain           int
+	CallGetTransactions        int
+	CallInsertTransactions     int
+	CallInsertNewBlockWith     []entitys.BlockMessage
+	CallGetTransactionsWith    []GetTransactionParameters
+	CallInsertTransactionsWith []entitys.TransactionMessageSet
+}
+
+func (mock *MockBlockChainMsg) RetriveChain() entitys.BlockChainMessage {
+	mock.CallRetriveChain++
+	return mock.Chain
+}
+
+func (mock *MockBlockChainMsg) Construct() error {
+	return mock.ErrConstruct
+}
+func (mock *MockBlockChainMsg) Genesis(capicity int) error {
+	mock.CallGenesis++
+	return mock.ErrGenesis
+}
+func (mock *MockBlockChainMsg) GetTransactions(from, twoWay bool, keys []rsa.PublicKey, times []int64) []entitys.TransactionMsg {
+	mock.CallGetTransactions++
+	row := GetTransactionParameters{
+		From:   from,
+		TwoWay: twoWay,
+		Keys:   keys,
+		Times:  times,
+	}
+	mock.CallGetTransactionsWith = append(mock.CallGetTransactionsWith, row)
+	return mock.Transactions
+}
+func (mock *MockBlockChainMsg) InsertTransaction(t entitys.TransactionMessageSet) error {
+	mock.CallInsertTransactions++
+	mock.CallInsertTransactionsWith = append(mock.CallInsertTransactionsWith, t)
+	return mock.ErrorInsertTransaction
+}
+func (mock *MockBlockChainMsg) InsertNewBlock(block entitys.BlockMessage) error {
+	mock.CallInsertNewBlock++
+	mock.CallInsertNewBlockWith = append(mock.CallInsertNewBlockWith, block)
+	return mock.ErrorInsertBlock
+}
+func (mock *MockBlockChainMsg) SetWorkers([]rsa.PublicKey) {}
 
 /*
 *

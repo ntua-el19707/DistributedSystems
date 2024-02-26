@@ -76,7 +76,7 @@ type BalanceService interface {
 
 type BalanceImplementation struct {
 	LoggerService     Logger.LoggerService
-	BlockChainService *BlockChainCoinsImpl
+	BlockChainService BlockChainCoinsService
 
 	SystemInfoService SystemInfo.SystemInfoService
 }

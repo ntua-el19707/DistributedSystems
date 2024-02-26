@@ -34,10 +34,6 @@ replace Generator v0.0.0 => ../Generator
 
 require Generator v0.0.0
 
-replace FindBalance v0.0.0 => ../FindBalance
-
-require FindBalance v0.0.0
-
 replace RabbitMqService v0.0.0 => ../RabbitMqService
 
 require RabbitMqService v0.0.0
@@ -49,3 +45,5 @@ require Stake v0.0.0
 replace Lottery v0.0.0 => ../Lottery
 
 require Lottery v0.0.0
+
+require github.com/rabbitmq/amqp091-go v1.9.0 // indirect

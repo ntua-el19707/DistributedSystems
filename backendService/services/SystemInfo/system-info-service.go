@@ -295,6 +295,107 @@ func (s *SystemInfoImpl) ClientList(key rsa.PublicKey) ([]entitys.ClientInfo, in
 	return list, len(list)
 
 }
+
+type BroadCastFuncParams struct {
+	ScaleFactorMessage float64
+	ScaleFactorCoins   float64
+}
+type ConsumeResponse struct {
+	Error            error
+	ScaleFactorMsg   float64
+	ScaleFactorCoins float64
+}
+type NodeDetailsResponse struct {
+	Info  entitys.ClientInfo
+	Total int
+}
+type WhoResponse struct {
+	Key   rsa.PublicKey
+	Error error
+}
+type ClientListResponse struct {
+	Clients []entitys.ClientInfo
+	Total   int
+}
+type MockSystemInfoService struct {
+	ErrConstruct        error
+	ErrAddWorker        error
+	ErrBroadCast        error
+	IsFullResponse      bool
+	ConsumeRsp          ConsumeResponse
+	IsOkResposne        bool
+	Workers             []rsa.PublicKey
+	NodeDetailsRsp      NodeDetailsResponse
+	WhoRsp              WhoResponse
+	ClientListRsp       ClientListResponse
+	CallAddWorker       int
+	CallConstruct       int
+	CallIsFull          int
+	CallBroadCast       int
+	CallConsume         int
+	CallIsOk            int
+	CallGetWorkers      int
+	CallNodeDetails     int
+	CallWho             int
+	CallClientList      int
+	CallAddWorkerWith   []entitys.ClientRequestBody
+	CallBroadCastWith   []BroadCastFuncParams
+	CallNodeDetailsWith []rsa.PublicKey
+	CallWhoWith         []int
+	CallClientListWith  []rsa.PublicKey
+}
+
+// Construct
+func (mock *MockSystemInfoService) Construct() error {
+	mock.CallConstruct++
+	return mock.ErrConstruct
+}
+func (mock *MockSystemInfoService) AddWorker(body entitys.ClientRequestBody) error {
+	mock.CallAddWorker++
+	mock.CallAddWorkerWith = append(mock.CallAddWorkerWith, body)
+	return mock.ErrAddWorker
+}
+func (mock *MockSystemInfoService) IsFull() bool {
+	mock.CallIsFull++
+	return mock.IsFullResponse
+}
+func (mock *MockSystemInfoService) BroadCast(sFm, sFc float64) error {
+	mock.CallBroadCast++
+	params := BroadCastFuncParams{
+		ScaleFactorMessage: sFm,
+		ScaleFactorCoins:   sFc,
+	}
+	mock.CallBroadCastWith = append(mock.CallBroadCastWith, params)
+	return mock.ErrBroadCast
+}
+func (mock *MockSystemInfoService) Consume() (error, float64, float64) {
+	mock.CallConsume++
+	return mock.ConsumeRsp.Error, mock.ConsumeRsp.ScaleFactorMsg, mock.ConsumeRsp.ScaleFactorCoins
+}
+func (mock *MockSystemInfoService) IsOk() bool {
+	mock.CallIsOk++
+	return mock.IsOkResposne
+}
+func (mock *MockSystemInfoService) GetWorkers() []rsa.PublicKey {
+	mock.CallGetWorkers++
+	return mock.Workers
+}
+func (mock *MockSystemInfoService) NodeDetails(key rsa.PublicKey) (entitys.ClientInfo, int) {
+	mock.CallNodeDetails++
+	mock.CallNodeDetailsWith = append(mock.CallNodeDetailsWith, key)
+	return mock.NodeDetailsRsp.Info, mock.NodeDetailsRsp.Total
+}
+func (mock *MockSystemInfoService) Who(index int) (rsa.PublicKey, error) {
+	mock.CallWho++
+	mock.CallWhoWith = append(mock.CallWhoWith, index)
+
+	return mock.WhoRsp.Key, mock.WhoRsp.Error
+}
+func (mock *MockSystemInfoService) ClientList(key rsa.PublicKey) ([]entitys.ClientInfo, int) {
+	mock.CallClientList++
+	mock.CallClientListWith = append(mock.CallClientListWith, key)
+	return mock.ClientListRsp.Clients, mock.ClientListRsp.Total
+}
 func getHash(key rsa.PublicKey) string {
 	publicKeyBytes, err := x509.MarshalPKIXPublicKey(&key)
 	if err != nil {

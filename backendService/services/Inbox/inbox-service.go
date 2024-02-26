@@ -15,6 +15,7 @@ type InboxRecord struct {
 	From          int    `json:"From"`
 	To            int    `json:"To"`
 	Msg           string `json:"Msg"`
+	Nonce         int    `json:"Nonce"`
 	Time          int64  `json:"SendTime"`
 	TransactionId string `json:"TransactionId"`
 }
@@ -27,7 +28,7 @@ func (inbox *Inbox) Map(t []entitys.TransactionMsg, SystemInfoService SystemInfo
 		billDetails := transaction.BillDetails
 		nodeFrom, _ := SystemInfoService.NodeDetails(billDetails.Bill.From.Address)
 		nodeTo, _ := SystemInfoService.NodeDetails(billDetails.Bill.To.Address)
-		row := InboxRecord{From: nodeFrom.IndexId, To: nodeTo.IndexId, Msg: transaction.Msg, Time: billDetails.Created_at, TransactionId: billDetails.Transaction_id}
+		row := InboxRecord{Nonce: transaction.BillDetails.Nonce, From: nodeFrom.IndexId, To: nodeTo.IndexId, Msg: transaction.Msg, Time: billDetails.Created_at, TransactionId: billDetails.Transaction_id}
 		(*inbox)[i] = row
 	}
 
@@ -64,7 +65,7 @@ func partition(inbox []InboxRecord, low, high int) int {
 
 type InboxProviders struct {
 	LoggerService     Logger.LoggerService
-	BlockChainService *WalletAndTransactions.BlockChainMsgImpl
+	BlockChainService WalletAndTransactions.BlockChainMsgService
 	SystemInfoService SystemInfo.SystemInfoService
 }
 
@@ -80,13 +81,13 @@ func (p *InboxProviders) Construct() error {
 
 }
 
-const errNoProvided = "There is  no provider for  %s"
+const errNoProvided = "There is  no provider for '%s'"
 
 func (p *InboxProviders) valid() error {
-	/*if p.BlockChainService == zero {
+	if p.BlockChainService == nil {
 		errMsg := fmt.Sprintf(errNoProvided, "Block Chain Service")
 		return errors.New(errMsg)
-	}*/
+	}
 	if p.SystemInfoService == nil {
 		errMsg := fmt.Sprintf(errNoProvided, "System Info Service")
 		return errors.New(errMsg)
