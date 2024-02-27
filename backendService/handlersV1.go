@@ -97,7 +97,7 @@ func registerV1(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 		if services.SystemInfoService.IsFull() {
-			err = services.SystemInfoService.BroadCast(2.0, 0.5)
+			err = services.SystemInfoService.BroadCast(sFm, sFc)
 			if err != nil {
 				jsonErrorBuilder(w, http.StatusInternalServerError, err.Error())
 				log.Fatal(err.Error())

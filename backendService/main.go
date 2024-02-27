@@ -74,6 +74,8 @@ func GetCapicitys() (int, int) {
 	return capicityBlockMsg, capicityBlockCoin
 }
 
+var sFm, sFc float64
+
 /*
 *
 
@@ -81,7 +83,7 @@ func GetCapicitys() (int, int) {
 */
 func main() {
 	port, workers, coordinator, curi, muri, id, rabbitMqUri := GetEnviroments()
-	var sFm, sFc, perNode float64
+	var perNode float64
 	var capicityMsg, capicityCoin int
 	if coordinator {
 		sFm, sFc = GetScaleFactors()

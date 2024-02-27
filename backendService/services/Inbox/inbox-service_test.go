@@ -181,7 +181,12 @@ func TestInbox(t *testing.T) {
 			err, inbox := service.Send(keyList, []int64{})
 			expectorNoErr(t, prefixOld, err)
 			callExpector[int](len(list), len(inbox), t, prefixOld, "inbox size")
-
+			callExpector[int](1, blockChainMsg.CallGetTransactions, t, prefixOld, "call get transactions")
+			callExpector[bool](true, blockChainMsg.CallGetTransactionsWith[0].From, t, prefixOld, "from mmust be =true")
+			callExpector[bool](false, blockChainMsg.CallGetTransactionsWith[0].TwoWay, t, prefixOld, "TwoWay mmust be =false")
+			callExpector[int](1, len(blockChainMsg.CallGetTransactionsWith[0].Keys), t, prefixOld, "Keys mmust be one")
+			callExpector[int](0, len(blockChainMsg.CallGetTransactionsWith[0].Times), t, prefixOld, "times mmust be 0")
+			callExpector[rsa.PublicKey](keyList[0], blockChainMsg.CallGetTransactionsWith[0].Keys[0], t, prefixOld, "key  at index 0 ")
 		}
 		itShouldGetTheSendInboxNoTimeParmasOneKey(prefixNew)
 	}
