@@ -217,10 +217,10 @@ func (wallet *WalletStructV1Implementation) UnFreeze(coins float64) error {
 	var err error
 	wallet.mu.Lock()
 	wallet.LoggerService.Log(fmt.Sprintf("start unfreeze  money %.3f ", coins))
+	const epsilon = 1e-9
 	if coins < 0 {
 		err = errors.New(fmt.Sprintf(errCannotFreezeUnFreezeNegativeCoins, "unfreeze"))
-	} else if wallet.frozen-coins < 0 {
-
+	} else if wallet.frozen-coins < -epsilon {
 		wallet.LoggerService.Error(fmt.Sprintf("%f", wallet.frozen-coins))
 		err = errors.New(errCannotUnFreezeAndGoNegativeCoins)
 	} else {
