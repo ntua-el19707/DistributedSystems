@@ -1,0 +1,17 @@
+<mat-card *ngIf="dataSource$ | async as t;" class="Box">
+    <mat-card-header>
+        <mat-card-title>Node {{ t.nodeDetails.nodeId}} INBOX</mat-card-title>
+    </mat-card-header>
+    <mat-card-content>
+        <mat-form-field>
+            <mat-label>Filter</mat-label>
+            <input matInput (keyup)="applyFilter($event)" placeholder="Ex. Hello" #input>
+        </mat-form-field>
+
+
+<div *ngIf="dataSourceList$ | async as data;">
+    <app-transaction-msg-table [data]="data"></app-transaction-msg-table>
+    </div>
+          </mat-card-content>
+      
+</mat-card>

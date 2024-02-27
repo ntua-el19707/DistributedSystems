@@ -1,0 +1,36 @@
+<mat-card class="custom-card">
+    <mat-card-header>
+        <mat-card-title>Transfer Coins</mat-card-title>
+    </mat-card-header>
+    <mat-card-content class="custom-card-content">
+        <form [formGroup]="TransferForm" class="custom-form">
+            <mat-form-field class="custom-form-field">
+                <mat-label>Select Client</mat-label>
+                <mat-select [formControl]="TransferForm.controls.To" required>
+                    <mat-option>--</mat-option>
+                    @for (nodeDetails of clients; track nodeDetails) {
+                    <mat-option [value]="nodeDetails">{{nodeDetails.indexId}}</mat-option>
+                    }
+                </mat-select>
+                @if (TransferForm.controls.To.hasError('required')) {
+                <mat-error>Please choose a client</mat-error>
+                }
+
+            </mat-form-field>
+            <br>
+            <mat-form-field class="custom-form-field">
+                <mat-label>Msg</mat-label>
+                <textarea matInput [formControl]="TransferForm.controls.Msg" placeholder="Ex. It makes me feel..."></textarea>
+      
+            
+                @if (TransferForm.controls.Msg.hasError('required')) {
+                <mat-error>Msg is <strong>required</strong></mat-error>
+                }
+            </mat-form-field>
+        </form>
+    </mat-card-content>
+    <hr class="custom-form-field">
+    <mat-card-actions class="custom-card-actions">
+        <button mat-raised-button color="primary" class="custom-form-field" (click)="submit()">send</button>
+    </mat-card-actions>
+</mat-card>

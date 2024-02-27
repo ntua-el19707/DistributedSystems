@@ -1,0 +1,11 @@
+$marginLeft: 5%;
+$marginRight: 5%;
+$width: 90%;
+$marginTop: 10%;
+
+.Box {
+    margin-left: $marginLeft;
+    margin-right: $marginRight;
+    width: $width;
+    margin-top: $marginTop;
+}

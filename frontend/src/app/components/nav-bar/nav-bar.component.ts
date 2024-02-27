@@ -1,15 +1,18 @@
 import { Component, inject } from '@angular/core';
 import { BreakpointObserver, Breakpoints } from '@angular/cdk/layout';
-import { AsyncPipe } from '@angular/common';
+import { AsyncPipe, CommonModule, JsonPipe } from '@angular/common';
 import { MatToolbarModule } from '@angular/material/toolbar';
 import { MatButtonModule } from '@angular/material/button';
 import { MatSidenavModule } from '@angular/material/sidenav';
 import { MatListModule } from '@angular/material/list';
 import { MatIconModule } from '@angular/material/icon';
-import { Observable } from 'rxjs';
+import { BehaviorSubject, Observable } from 'rxjs';
 import { map, shareReplay } from 'rxjs/operators';
 import { RouterOutlet } from '@angular/router';
-
+import { ClientsModule } from '../../features/clients/clients.module';
+import { ClientsBehaviorSubjectService } from '../../features/clients/clients-behavior-subject.service';
+import { clientsInfoRsp, nodeDetails } from '../../sharable';
+const custom = [ClientsModule]
 @Component({
   selector: 'app-nav-bar',
   templateUrl: './nav-bar.component.html',
@@ -22,16 +25,24 @@ import { RouterOutlet } from '@angular/router';
     MatListModule,
     MatIconModule,
     AsyncPipe,
-    RouterOutlet
+    RouterOutlet,
+    CommonModule,ClientsModule , JsonPipe
   ],
 })
 export class NavBarComponent {
+  readonly dataSource$:BehaviorSubject<Array<nodeDetails>>
   private breakpointObserver = inject(BreakpointObserver);
-
+constructor(private clientsBehaviorSubjectService:ClientsBehaviorSubjectService){
+  this.clientsBehaviorSubjectService.fetchClients()
+this.dataSource$ = this.clientsBehaviorSubjectService.getBehavior()
+}
   isHandset$: Observable<boolean> = this.breakpointObserver
     .observe(Breakpoints.Handset)
     .pipe(
       map((result) => result.matches),
       shareReplay()
     );
+    openInNewTab(link :string){
+        window.open(link, '_blank');
+    }
 }

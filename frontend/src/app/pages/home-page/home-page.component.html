@@ -1,1 +1,18 @@
 <app-coin-card></app-coin-card>
+<mat-card class="Box">
+    <mat-card-header>
+        <mat-card-title>Node Transaction coins</mat-card-title>
+    </mat-card-header>
+    <mat-card-content>
+        <mat-form-field>
+            <mat-label>Filter >= coins</mat-label>
+            <input  matInput (keyup)="applyFilter($event)" placeholder="15" #input>
+        </mat-form-field>
+
+
+        <div *ngIf="dataSourceList$ | async as data;">
+            <app-coin-transaction-table [data]="data"></app-coin-transaction-table>
+        </div>
+    </mat-card-content>
+
+</mat-card>

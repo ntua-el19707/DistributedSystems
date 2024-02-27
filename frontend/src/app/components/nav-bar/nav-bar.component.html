@@ -6,8 +6,11 @@
     <mat-toolbar>Menu</mat-toolbar>
     <mat-nav-list>
       <a mat-list-item href="/">Home</a>
-      <a mat-list-item href="/messenger">Messenger</a>
-      
+      <a mat-list-item href="/#/inbox">inbox</a>
+      <a mat-list-item href="/#/send">send</a>
+      <a mat-list-item href="/#/allMessages">all Messages</a>
+      <a mat-list-item href="/#/transfer">transfer</a>
+      <a mat-list-item href="/#/sendMessage">send</a>
     </mat-nav-list>
   </mat-sidenav>
   <mat-sidenav-content>
@@ -21,7 +24,16 @@
           <mat-icon aria-label="Side nav toggle icon">menu</mat-icon>
         </button>
       }
-      <span>frontend</span>
+      <span>BCC</span>
+    
+      <span *ngIf="dataSource$ | async as  clients;" >
+<div style="display: flex; align-items: center; justify-content: flex-end;">
+            @for(c of clients ; track c){
+        <button (click)="openInNewTab(c.uri)"> go to  node  {{c.indexId}} </button>
+            }
+</div>
+      </span>
+    
     </mat-toolbar>
     <router-outlet></router-outlet>
   </mat-sidenav-content>

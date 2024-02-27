@@ -8,7 +8,7 @@ import { BehaviorSubject } from 'rxjs';
   providedIn: NodeInfoModule
 })
 export class NodeInfoBehaviorService { 
-  #nodeInfoBehaviorSubject:BehaviorSubject<nodeDetails> = new BehaviorSubject({nodeId:"" , indexId:0 , Uri:""} )
+  #nodeInfoBehaviorSubject:BehaviorSubject<nodeDetails> = new BehaviorSubject({nodeId:"" , indexId:0 , uri:""} )
   #nodeInfoOthersBehaviorSubject:BehaviorSubject<Array<number>> = new BehaviorSubject<Array<number>>([]) 
   constructor(private  nodeInfoClientService:NodeInfoClientService) { }
   fetchNodeInfo(){
@@ -19,6 +19,7 @@ export class NodeInfoBehaviorService {
        if(  i !==  node) {
         other.push(i)
       }
+      console.log(r.client)
       this.#nodeInfoBehaviorSubject.next(r.client)
       this.#nodeInfoOthersBehaviorSubject.next(other)
       }

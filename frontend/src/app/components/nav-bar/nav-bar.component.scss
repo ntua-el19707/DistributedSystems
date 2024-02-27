@@ -15,3 +15,11 @@
   top: 0;
   z-index: 1;
 }
+
+.oposite {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end; // Align items to the right
+
+
+}

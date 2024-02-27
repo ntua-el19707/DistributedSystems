@@ -6,8 +6,11 @@ import { NodeInfoModule } from '../../features/node-info/node-info.module';
 import { NodeInfoBehaviorService } from '../../features/node-info/node-info-behavior.service';
 import { BehaviorSubject } from 'rxjs';
 import { AsyncPipe, CommonModule } from '@angular/common';
+import { TransactionCoinsModule } from '../../features/transaction-coins/transaction-coins.module';
+import { TransactionBehaviorService } from '../../features/transaction-coins/transaction-behavior.service';
+import { TranferCoinsFormComponent } from '../tranfer-coins-form/tranfer-coins-form.component';
 const material  = [MatButtonModule , MatCardModule]  
-const  custom =  [NodeInfoModule]
+const  custom =  [NodeInfoModule ,TransactionCoinsModule]
 const common = [CommonModule , AsyncPipe] 
 @Component({
   selector: 'app-coin-card',
@@ -18,7 +21,9 @@ const common = [CommonModule , AsyncPipe]
 })
 export class CoinCardComponent {
   readonly dataSource$ :BehaviorSubject<nodeDetails>
-  constructor(private nodeInfoBehaviorService :NodeInfoBehaviorService) {
+  readonly coins$:BehaviorSubject<number>
+  constructor(private nodeInfoBehaviorService :NodeInfoBehaviorService , private transactionBehaviorService:TransactionBehaviorService) {
     this.dataSource$ = this.nodeInfoBehaviorService.getNodeInfo()
+    this.coins$ = this.transactionBehaviorService.getBalanceSubject()
   }
 }
