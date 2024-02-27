@@ -220,6 +220,8 @@ func (wallet *WalletStructV1Implementation) UnFreeze(coins float64) error {
 	if coins < 0 {
 		err = errors.New(fmt.Sprintf(errCannotFreezeUnFreezeNegativeCoins, "unfreeze"))
 	} else if wallet.frozen-coins < 0 {
+
+		wallet.LoggerService.Error(fmt.Sprintf("%f", wallet.frozen-coins))
 		err = errors.New(errCannotUnFreezeAndGoNegativeCoins)
 	} else {
 		wallet.frozen -= coins
