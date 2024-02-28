@@ -27,6 +27,7 @@ submit(){
 
     const coins = this.TransferForm.controls.Coins.value 
        if (target && coins) {
+        console.log(target ,coins)
       this.transactionClientService.postTransaction(target , parseFloat(coins))
 
   }

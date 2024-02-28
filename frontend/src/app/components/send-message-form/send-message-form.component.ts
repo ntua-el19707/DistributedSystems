@@ -29,6 +29,7 @@ TransferForm: FormGroup<transactionMsgForm> = new FormGroup<transactionMsgForm>(
 
     const msg =  this.TransferForm.controls.Msg.value 
     if (target && msg) {
+      console.log(target , msg )
     this.transactionMsgClientService.postTransaction(target , msg)
   }
 
