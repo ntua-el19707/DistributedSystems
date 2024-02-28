@@ -9,6 +9,7 @@ import (
 	"entitys"
 	"errors"
 	"fmt"
+	"sort"
 )
 
 type InboxRecord struct {
@@ -33,34 +34,15 @@ func (inbox *Inbox) Map(t []entitys.TransactionMsg, SystemInfoService SystemInfo
 	}
 
 }
-func (inbox *Inbox) Sort() {
-	if len(*inbox) < 2 {
-		return
-	}
-	quickSort(*inbox, 0, len(*inbox)-1)
-}
 
-// Helper function for QuickSort algorithm
-func quickSort(inbox []InboxRecord, low, high int) {
-	if low < high {
-		pi := partition(inbox, low, high)
-		quickSort(inbox, low, pi-1)
-		quickSort(inbox, pi+1, high)
-	}
+func (inbox Inbox) Len() int {
+	return len(inbox)
 }
-
-// Helper function to partition the array for QuickSort
-func partition(inbox []InboxRecord, low, high int) int {
-	pivot := inbox[high].Time
-	i := low - 1
-	for j := low; j < high; j++ {
-		if inbox[j].Time > pivot {
-			i++
-			inbox[i], inbox[j] = inbox[j], inbox[i]
-		}
-	}
-	inbox[i+1], inbox[high] = inbox[high], inbox[i+1]
-	return i + 1
+func (inbox Inbox) Less(i, j int) bool {
+	return inbox[i].Time > inbox[j].Time
+}
+func (inbox Inbox) Swap(i, j int) {
+	inbox[i], inbox[j] = inbox[j], inbox[i]
 }
 
 type InboxProviders struct {
@@ -82,6 +64,9 @@ func (p *InboxProviders) Construct() error {
 }
 
 const errNoProvided = "There is  no provider for '%s'"
+const errAtleast1Rsa = "Need at least 1 rsa.PublicKey"
+const errMax2Rsa = "Max 2 rsa.PublicKey"
+const errMax2Times = "Max 2 times  'unix' - int64"
 
 func (p *InboxProviders) valid() error {
 	if p.BlockChainService == nil {
@@ -115,11 +100,14 @@ func (service *InboxImpl) All(times []int64) (error, Inbox) {
 	if err != nil {
 		return err, nil
 	}
+	if len(times) > 2 {
+		return errors.New(errMax2Times), nil
+	}
 	keys := make([]rsa.PublicKey, 0)
 	transactions := service.Providers.BlockChainService.GetTransactions(true, false, keys, times)
 	var inbox Inbox
 	inbox.Map(transactions, service.Providers.SystemInfoService)
-	inbox.Sort()
+	sort.Sort(inbox)
 	return nil, inbox
 }
 func (service *InboxImpl) Send(keys []rsa.PublicKey, times []int64) (error, Inbox) {
@@ -128,12 +116,18 @@ func (service *InboxImpl) Send(keys []rsa.PublicKey, times []int64) (error, Inbo
 		return err, nil
 	}
 	if len(keys) == 0 {
-		return errors.New("need  at leat one  key"), nil
+		return errors.New(errAtleast1Rsa), nil
+	}
+	if len(keys) > 2 {
+		return errors.New(errMax2Rsa), nil
+	}
+	if len(times) > 2 {
+		return errors.New(errMax2Times), nil
 	}
 	transactions := service.Providers.BlockChainService.GetTransactions(true, false, keys, times)
 	var inbox Inbox
 	inbox.Map(transactions, service.Providers.SystemInfoService)
-	inbox.Sort()
+	sort.Sort(inbox)
 	return nil, inbox
 }
 func (service *InboxImpl) Receive(keys []rsa.PublicKey, times []int64) (error, Inbox) {
@@ -142,12 +136,18 @@ func (service *InboxImpl) Receive(keys []rsa.PublicKey, times []int64) (error, I
 		return err, nil
 	}
 	if len(keys) == 0 {
-		return errors.New("need  at leat one  key"), nil
+		return errors.New(errAtleast1Rsa), nil
+	}
+	if len(keys) > 2 {
+		return errors.New(errMax2Rsa), nil
+	}
+	if len(times) > 2 {
+		return errors.New(errMax2Times), nil
 	}
 	transactions := service.Providers.BlockChainService.GetTransactions(false, false, keys, times)
 	var inbox Inbox
 	inbox.Map(transactions, service.Providers.SystemInfoService)
-	inbox.Sort()
+	sort.Sort(inbox)
 	return nil, inbox
 }
 func (service *InboxImpl) SendAndReceived(keys []rsa.PublicKey, times []int64) (error, Inbox) {
@@ -156,11 +156,17 @@ func (service *InboxImpl) SendAndReceived(keys []rsa.PublicKey, times []int64) (
 		return err, nil
 	}
 	if len(keys) == 0 {
-		return errors.New("need  at leat one  key"), nil
+		return errors.New(errAtleast1Rsa), nil
+	}
+	if len(keys) > 2 {
+		return errors.New(errMax2Rsa), nil
+	}
+	if len(times) > 2 {
+		return errors.New(errMax2Times), nil
 	}
 	transactions := service.Providers.BlockChainService.GetTransactions(false, true, keys, times)
 	var inbox Inbox
 	inbox.Map(transactions, service.Providers.SystemInfoService)
-	inbox.Sort()
+	sort.Sort(inbox)
 	return nil, inbox
 }
