@@ -12,21 +12,21 @@ import { RouterOutlet } from '@angular/router';
 import { ClientsModule } from '../../features/clients/clients.module';
 import { ClientsBehaviorSubjectService } from '../../features/clients/clients-behavior-subject.service';
 import { clientsInfoRsp, nodeDetails } from '../../sharable';
+import {MatTreeFlatDataSource, MatTreeFlattener, MatTreeModule} from '@angular/material/tree';
+import {MatExpansionModule} from '@angular/material/expansion';
 const custom = [ClientsModule]
+const material = []
 @Component({
   selector: 'app-nav-bar',
   templateUrl: './nav-bar.component.html',
   styleUrl: './nav-bar.component.scss',
   standalone: true,
   imports: [
-    MatToolbarModule,
-    MatButtonModule,
-    MatSidenavModule,
-    MatListModule,
-    MatIconModule,
+    ...custom ,
     AsyncPipe,
     RouterOutlet,
-    CommonModule,ClientsModule , JsonPipe
+    CommonModule,ClientsModule , JsonPipe ,MatExpansionModule,
+ MatIconModule , MatButtonModule , MatToolbarModule,MatSidenavModule,MatListModule
   ],
 })
 export class NavBarComponent {

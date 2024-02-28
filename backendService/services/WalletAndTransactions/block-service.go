@@ -26,6 +26,7 @@ type BlockChainCoinsImpl struct {
 	Workers     []rsa.PublicKey
 	Services    BlockServiceProviders
 	mu          sync.Mutex
+	index       int
 	ScaleFactor float64
 }
 type BlockServiceProviders struct {
@@ -108,7 +109,7 @@ func (service *BlockChainCoinsImpl) Genesis(capicity, workers int, perNode float
 	if err != nil {
 		return err
 	}
-	service.Chain.ChainGenesis(service.Services.LoggerService, service.Services.HashService, service.Services.WalletServiceInstance.GetPub(), 0, capicity, workers, perNode)
+	service.index = service.Chain.ChainGenesis(service.Services.LoggerService, service.Services.HashService, service.Services.WalletServiceInstance.GetPub(), 0, capicity, workers, perNode)
 	return nil
 }
 func (service *BlockChainMsgImpl) SetWorkers(workers []rsa.PublicKey) {
@@ -119,8 +120,12 @@ func (service *BlockChainCoinsImpl) InsertNewBlock(block entitys.BlockCoinEntity
 	var err error
 	service.mu.Lock()
 	defer service.mu.Unlock()
-	err = service.Chain.InsertNewBlock(service.Services.LoggerService, service.Services.HashService, block)
-	return err
+	index, err := service.Chain.InsertNewBlock(service.Services.LoggerService, service.Services.HashService, block)
+	if err != nil {
+		return err
+	}
+	service.index = index
+	return nil
 }
 
 func (service *BlockChainCoinsImpl) FindBalance(key rsa.PublicKey) float64 {
@@ -217,10 +222,11 @@ func (service *BlockChainCoinsImpl) InsertTransaction(t entitys.TransactionCoinS
 		block := service.Services.RabbitMqService.ConsumeNextBlockCoin()
 		validator = block.BlockCoin.BlockEntity.Validator
 		//NOW The re is  litle  a chance to fail Mine only if  internal error if err =>  commit  harakiri
-		err = service.Chain.InsertNewBlock(service.Services.LoggerService, service.Services.HashService, block.BlockCoin)
+		index, err := service.Chain.InsertNewBlock(service.Services.LoggerService, service.Services.HashService, block.BlockCoin)
 		if err != nil {
 			logger.Fatal(err.Error())
 		}
+		service.index = index
 		logger.Log("Commit  Mine Block Coins ")
 	}
 	//Re Sign  and  send
@@ -333,6 +339,7 @@ type BlockChainMsgImpl struct {
 	Services    BlockServiceProviders
 	mu          sync.Mutex
 	ScaleFactor float64
+	index       int
 }
 
 func (service *BlockChainMsgImpl) Construct() error {
@@ -351,8 +358,12 @@ func (service *BlockChainMsgImpl) InsertNewBlock(block entitys.BlockMessage) err
 	var err error
 	service.mu.Lock()
 	defer service.mu.Unlock()
-	err = service.Chain.InsertNewBlock(service.Services.LoggerService, service.Services.HashService, block)
-	return err
+	index, err := service.Chain.InsertNewBlock(service.Services.LoggerService, service.Services.HashService, block)
+	if err != nil {
+		return err
+	}
+	service.index = index
+	return nil
 }
 func (service *BlockChainMsgImpl) GetTransactions(from, twoWay bool, keys []rsa.PublicKey, times []int64) []entitys.TransactionMsg {
 	logger := service.Services.LoggerService
@@ -372,7 +383,8 @@ func (service *BlockChainMsgImpl) Genesis(capicity int) error {
 	if err != nil {
 		return err
 	}
-	service.Chain.ChainGenesis(service.Services.LoggerService, service.Services.HashService, service.Services.WalletServiceInstance.GetPub(), 0, capicity)
+	service.index = service.Chain.ChainGenesis(service.Services.LoggerService, service.Services.HashService, service.Services.WalletServiceInstance.GetPub(), 0, capicity)
+
 	return nil
 }
 
@@ -453,7 +465,13 @@ func (service *BlockChainMsgImpl) InsertTransaction(t entitys.TransactionMessage
 		}
 		recievedBlock := service.Services.RabbitMqService.ConsumeNextBlockMsg()
 		validator = recievedBlock.BlockMsg.BlockEntity.Validator
-		service.Chain.InsertNewBlock(service.Services.LoggerService, service.Services.HashService, recievedBlock.BlockMsg)
+		index, err := service.Chain.InsertNewBlock(service.Services.LoggerService, service.Services.HashService, recievedBlock.BlockMsg)
+		if err != nil {
+			logger.Fatal(err.Error())
+			return err
+		}
+
+		service.index = index
 		logger.Log("Commit Mine")
 
 	}

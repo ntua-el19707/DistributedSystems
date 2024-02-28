@@ -1,0 +1,14 @@
+
+<mat-card class="error-card">
+   <div style="height: 80%">
+    <mat-card-header>
+        <mat-card-title style="color:red">Error</mat-card-title>
+    </mat-card-header>
+    <mat-card-content>
+     {{errMsg}}
+    </mat-card-content>
+    </div>
+    <mat-card-actions style="width: 100%;height:20%" >
+        <button mat-button class="btn" (click)="closeDialog()" >ok</button>
+    </mat-card-actions>
+</mat-card>

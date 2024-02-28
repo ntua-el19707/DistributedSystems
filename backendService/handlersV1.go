@@ -314,7 +314,25 @@ func TransactionsV1(w http.ResponseWriter, r *http.Request) {
 		jsonErrorBuilder(w, http.StatusMethodNotAllowed, message)
 	}
 }
+func TransactionsAllV1(w http.ResponseWriter, r *http.Request) {
+	switch r.Method {
+	case http.MethodGet:
+		transactions := services.FindBalanceService.GetTransactions([]rsa.PublicKey{}, []int64{})
+		type rsp struct {
+			Transactions WalletAndTransactions.TransactionListCoin `json:"transactions"`
+			NodeDetails  entitys.ClientInfo                        `json:"nodeDetails"`
+		}
+		var response rsp
+		response.Transactions = transactions
+		response.NodeDetails, _ = services.SystemInfoService.NodeDetails(services.WalletService.GetPub())
+		jsonBuilder(w, http.StatusOK, response)
 
+	default:
+		//methods not  implemented
+		message := fmt.Sprintf(httpErrorResponseNotImplemented, r.Method, r.URL.Path)
+		jsonErrorBuilder(w, http.StatusMethodNotAllowed, message)
+	}
+}
 func balanceV1(w http.ResponseWriter, r *http.Request) {
 	switch r.Method {
 	case http.MethodGet:

@@ -91,6 +91,8 @@ func setRouterForV1(v1 *http.ServeMux, prefixV1 string, c bool) {
 	v1.HandleFunc("/balance", balanceV1)
 	log.Printf(setUpRouteMessage, fmt.Sprintf("%s/transactions", prefixV1))
 	v1.HandleFunc("/transactions", TransactionsV1)
+	log.Printf(setUpRouteMessage, fmt.Sprintf("%s/transactionsAll", prefixV1))
+	v1.HandleFunc("/transactions", TransactionsAllV1)
 }
 
 func SystemInitilize(next http.HandlerFunc) http.HandlerFunc {

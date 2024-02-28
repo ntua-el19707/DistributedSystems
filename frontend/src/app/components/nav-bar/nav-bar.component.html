@@ -5,12 +5,41 @@
       [opened]="(isHandset$ | async) === false">
     <mat-toolbar>Menu</mat-toolbar>
     <mat-nav-list>
+<mat-accordion>
+  <!-- Trsanction Message Overview -->
+    <!-- Home -->
+    <mat-expansion-panel hideToggle>
+      <mat-expansion-panel-header>
+        <mat-panel-title>
+          Home
+        </mat-panel-title>
+      </mat-expansion-panel-header>
       <a mat-list-item href="/">Home</a>
-      <a mat-list-item href="/#/inbox">inbox</a>
-      <a mat-list-item href="/#/send">send</a>
-      <a mat-list-item href="/#/allMessages">all Messages</a>
-      <a mat-list-item href="/#/transfer">transfer</a>
-      <a mat-list-item href="/#/sendMessage">send</a>
+    </mat-expansion-panel>
+
+  <mat-expansion-panel hideToggle>
+    <mat-expansion-panel-header>
+      <mat-panel-title>
+        Transaction Message Overview
+      </mat-panel-title>
+    </mat-expansion-panel-header>
+    <a mat-list-item href="/#/inbox">Inbox</a>
+    <a mat-list-item href="/#/send">Send</a>
+    <a mat-list-item href="/#/allMessages">All Messages</a>
+  </mat-expansion-panel>
+
+
+  <!-- Transfer forms -->
+  <mat-expansion-panel hideToggle>
+    <mat-expansion-panel-header>
+      <mat-panel-title>
+        Transfer Forms
+      </mat-panel-title>
+    </mat-expansion-panel-header>
+    <a mat-list-item href="/#/transfer">Transfer</a>
+    <a mat-list-item href="/#/sendMessage">Send</a>
+  </mat-expansion-panel>
+</mat-accordion>
     </mat-nav-list>
   </mat-sidenav>
   <mat-sidenav-content>

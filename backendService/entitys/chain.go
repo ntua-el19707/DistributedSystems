@@ -14,12 +14,15 @@ const ErrTransactionListIsNorFullYet string = "Tranasaction List of size  %d  in
 type BlockChainCoins []BlockCoinEntity
 type BlockChainMessage []BlockMessage
 
+const initialIndexCoins int = 2
+const initialIndexMsg int = 0
+
 /*
 *
 
 	Genesis -  Genesis a  new Chain
 */
-func (chain *BlockChainCoins) ChainGenesis(logger Logger.LoggerService, hasher Hasher.HashService, Validator rsa.PublicKey, shiftTime int64, capicity, workers int, perNode float64) {
+func (chain *BlockChainCoins) ChainGenesis(logger Logger.LoggerService, hasher Hasher.HashService, Validator rsa.PublicKey, shiftTime int64, capicity, workers int, perNode float64) int {
 	logger.Log("Start  creating a  new  chain -- GENESIS --  ")
 	parent := hasher.ParrentOFall()
 	current := hasher.InstantHash(shiftTime)
@@ -29,19 +32,22 @@ func (chain *BlockChainCoins) ChainGenesis(logger Logger.LoggerService, hasher H
 	genessisBlock.Genesis(Validator, parent, current, capicity, workers, perNode, logger)
 	*chain = append(*chain, *genessisBlock)
 	logger.Log("Commit  creating a  new  chain -- GENESIS --  ")
+	return initialIndexCoins
 }
 
-func (chain *BlockChainCoins) InsertNewBlock(logger Logger.LoggerService, hasher Hasher.HashService, blockDetails BlockCoinEntity) error {
+func (chain *BlockChainCoins) InsertNewBlock(logger Logger.LoggerService, hasher Hasher.HashService, blockDetails BlockCoinEntity) (int, error) {
 	logger.Log("Start insert a new block in chain")
 	size := len(*chain)
+	index := initialIndexCoins
 	if size != 0 {
+		index = 0
 		latest := (*chain)[size-1]
 		capicity := latest.BlockEntity.Capicity
 		hasTransactions := len(latest.Transactions)
 		if capicity != hasTransactions {
 			errmsg := fmt.Sprintf(ErrTransactionListIsNorFullYet, capicity, hasTransactions)
 			logger.Error(fmt.Sprintf("Abbort: %s", errmsg))
-			return errors.New(errmsg)
+			return -1, errors.New(errmsg)
 		}
 		/*
 			expectedIndex := len(*chain)
@@ -58,13 +64,13 @@ func (chain *BlockChainCoins) InsertNewBlock(logger Logger.LoggerService, hasher
 		if err != nil {
 			errmsg := err.Error()
 			logger.Error(fmt.Sprintf("Abbort: Failed validation  due to %s", errmsg))
-			return err
+			return -1, err
 		}
 		logger.Log("Commit validation of block")
 	}
 	*chain = append(*chain, blockDetails)
 	logger.Log("Commit insert a new block in chain")
-	return nil
+	return index, nil
 }
 func (chain *BlockChainCoins) InsertTransactions(transactions []TransactionCoins) {
 	(*chain)[len(*chain)-1].Transactions = append((*chain)[len(*chain)-1].Transactions, transactions...)
@@ -109,7 +115,7 @@ func (chain *BlockChainCoins) GetTransactions(from, twoWay bool, keys []rsa.Publ
 
 	Genesis -  Genesis a  new Chain
 */
-func (chain *BlockChainMessage) ChainGenesis(logger Logger.LoggerService, hasher Hasher.HashService, Validator rsa.PublicKey, shiftTime int64, capicity int) {
+func (chain *BlockChainMessage) ChainGenesis(logger Logger.LoggerService, hasher Hasher.HashService, Validator rsa.PublicKey, shiftTime int64, capicity int) int {
 	logger.Log("Start  creating a  new  chain -- GENESIS --  ")
 	parent := hasher.ParrentOFall()
 	current := hasher.InstantHash(shiftTime)
@@ -119,31 +125,34 @@ func (chain *BlockChainMessage) ChainGenesis(logger Logger.LoggerService, hasher
 	genessisBlock.Genesis(Validator, parent, current, capicity, logger)
 	*chain = append(*chain, *genessisBlock)
 	logger.Log("Commit  creating a  new  chain -- GENESIS --  ")
+	return initialIndexMsg
 }
-func (chain *BlockChainMessage) InsertNewBlock(logger Logger.LoggerService, hasher Hasher.HashService, blockDetails BlockMessage) error {
+func (chain *BlockChainMessage) InsertNewBlock(logger Logger.LoggerService, hasher Hasher.HashService, blockDetails BlockMessage) (int, error) {
 	logger.Log("Start insert a new block in chain")
 	size := len(*chain)
+	index := initialIndexMsg
 	if size != 0 {
+		index = 0
 		latest := (*chain)[size-1]
 		capicity := latest.BlockEntity.Capicity
 		hasTransactions := len(latest.Transactions)
 		if capicity != hasTransactions {
 			errmsg := fmt.Sprintf(ErrTransactionListIsNorFullYet, capicity, hasTransactions)
 			logger.Error(fmt.Sprintf("Abbort: %s", errmsg))
-			return errors.New(errmsg)
+			return index, errors.New(errmsg)
 		}
 		logger.Log("Start validation of block")
 		err := blockDetails.BlockEntity.ValidateBlock(logger, hasher.Valid, (*chain)[len(*chain)-1].BlockEntity)
 		if err != nil {
 			errmsg := err.Error()
 			logger.Error(fmt.Sprintf("Abbort: Failed validation  due to %s", errmsg))
-			return err
+			return index, err
 		}
 		logger.Log("Commit validation of block")
 	}
 	*chain = append(*chain, blockDetails)
 	logger.Log("Commit insert a new block in chain")
-	return nil
+	return index, nil
 }
 func (chain *BlockChainMessage) GetTransactions(from, twoWay bool, keys []rsa.PublicKey, times []int64) []TransactionMsg {
 
@@ -169,4 +178,12 @@ func (chain *BlockChainMessage) GetTransactions(from, twoWay bool, keys []rsa.Pu
 }
 func (chain *BlockChainMessage) InsertTransactions(transaction TransactionMsg) {
 	(*chain)[len(*chain)-1].InsertTransaction(transaction)
+}
+
+func (chain *BlockChainMessage) InsertATransactions(i int, transaction TransactionMsg) error {
+	return (*chain)[len(*chain)-1].InsertOneTransaction(i, transaction)
+}
+
+func (chain *BlockChainCoins) InsertATransactions(i int, transaction TransactionCoins) error {
+	return (*chain)[len(*chain)-1].InsertOneTransaction(i, transaction)
 }

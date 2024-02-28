@@ -290,3 +290,23 @@ func (b *BlockMessage) GetTransactions(from, twoWay bool, keys []rsa.PublicKey, 
 func (b *BlockMessage) InsertTransaction(t TransactionMsg) {
 	b.Transactions = append(b.Transactions, t)
 }
+
+const errOutOfBounds = "cannot  at a transaction  at index %d due to vlock capicity %d"
+
+func (b *BlockCoinEntity) InsertOneTransaction(i int, t TransactionCoins) error {
+	capicity := b.BlockEntity.Capicity
+	if i >= capicity {
+		return errors.New(fmt.Sprintf(errOutOfBounds, i, capicity))
+	}
+	(*b).Transactions[i] = t
+	return nil
+}
+
+func (b *BlockMessage) InsertOneTransaction(i int, t TransactionMsg) error {
+	capicity := b.BlockEntity.Capicity
+	if i >= capicity {
+		return errors.New(fmt.Sprintf(errOutOfBounds, i, capicity))
+	}
+	(*b).Transactions[i] = t
+	return nil
+}
