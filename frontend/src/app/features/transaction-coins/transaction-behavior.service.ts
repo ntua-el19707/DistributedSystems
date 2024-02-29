@@ -10,10 +10,12 @@ import { TransactionClientService } from './transaction-client.service';
 })
 export class TransactionBehaviorService {
   #balanceBehaviorSubject : BehaviorSubject<number> = new BehaviorSubject<number>(0.0)
-  #myTransactionsBehaviorSubject:BehaviorSubject<transactionCoinResponse> = new BehaviorSubject<transactionCoinResponse>({nodeDetails:{indexId:0 , nodeId:"" , uri:""},transactions:[]})
-  #myTransactionsfilterBehaviorSubject:BehaviorSubject<transactionCoinResponse> = new BehaviorSubject<transactionCoinResponse>({nodeDetails:{indexId:0 , nodeId:"" , uri:""},transactions:[]})
+  #myTransactionsBehaviorSubject:BehaviorSubject<transactionCoinResponse> = new BehaviorSubject<transactionCoinResponse>({nodeDetails:{indexId:0 , nodeId:"" , uri:"" ,uriPublic:""},transactions:[]})
+  #myTransactionsfilterBehaviorSubject:BehaviorSubject<transactionCoinResponse> = new BehaviorSubject<transactionCoinResponse>({nodeDetails:{indexId:0 , nodeId:"" , uri:"",uriPublic:""},transactions:[]})
  
-  
+   #allTransactionsBehaviorSubject:BehaviorSubject<transactionCoinResponse> = new BehaviorSubject<transactionCoinResponse>({nodeDetails:{indexId:0 , nodeId:"" , uri:"",uriPublic:""},transactions:[]})
+  #allTransactionsfilterBehaviorSubject:BehaviorSubject<transactionCoinResponse> = new BehaviorSubject<transactionCoinResponse>({nodeDetails:{indexId:0 , nodeId:"" , uri:"",uriPublic:""},transactions:[]})
+ 
   constructor(private transactionClientService:TransactionClientService){  }
   fetchBalance(){
 this.transactionClientService.getBalance().subscribe((r:BalanceRsp)=>{
@@ -48,7 +50,26 @@ getMyFilterTransactions():BehaviorSubject<transactionCoinResponse> {
   getMyTransactions():BehaviorSubject<transactionCoinResponse>{
     return this.#myTransactionsBehaviorSubject
   }
-
+getMyAllFilterTransactions():BehaviorSubject<transactionCoinResponse>{
+return this.#allTransactionsfilterBehaviorSubject
+}
+  fetchAllTransactions() {
+    this.transactionClientService.getAllTransactions().subscribe(r =>{
+      this.#allTransactionsBehaviorSubject.next(r)
+      this.#allTransactionsfilterBehaviorSubject.next(r)
+    } , err=>{
+      console.log(err)
+    } , ()=>{})
+  }
+  filterAllCoins(coin:number){
+    const  observable =  this.#allTransactionsBehaviorSubject.pipe(map((response:transactionCoinResponse )=>{
+      const filteredTransactions = response.transactions.filter(transaction => transaction.Coins >= coin);
+        return { ...response, transactions: filteredTransactions };
+    }))
+    observable.subscribe((r:transactionCoinResponse)=>{
+     this.#allTransactionsfilterBehaviorSubject.next(r)
+    })
+  }
   }
  
 

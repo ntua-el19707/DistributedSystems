@@ -3,6 +3,7 @@ import { nodeDetails } from "./nodeDetails"
 export interface  TransactionMsgRow{
     From :number 
     To: number  
+    Nonce:number
     Msg: string 
     SendTime :number 
     TransactionId:string

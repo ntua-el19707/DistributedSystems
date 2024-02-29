@@ -44,18 +44,3 @@ applyFilter(event: Event){
 
 }
 
-const dummy: TransactionMsgRow[] = [];
-function generate(total:number):Array<TransactionMsgRow>{
-// Generate 50 dummy rows
-for (let i = 0; i < total; i++) {
-  dummy.push({
-    From: Math.floor(Math.random() * 1000), // Random number between 0 and 999 for example
-    To: Math.floor(Math.random() * 1000),
-    Msg: `Message ${i + 1}`,
-    SendTime: Math.floor(Date.now() / 1000) - Math.floor(Math.random() * 86400 * 30), // Random Unix time in the past 30 days
-    TransactionId: `Transaction${i + 1}`
-  });
-}
-return dummy 
-}
-

@@ -11,11 +11,11 @@ import { map, shareReplay } from 'rxjs/operators';
 import { RouterOutlet } from '@angular/router';
 import { ClientsModule } from '../../features/clients/clients.module';
 import { ClientsBehaviorSubjectService } from '../../features/clients/clients-behavior-subject.service';
-import { clientsInfoRsp, nodeDetails } from '../../sharable';
-import {MatTreeFlatDataSource, MatTreeFlattener, MatTreeModule} from '@angular/material/tree';
+import {  nodeDetails } from '../../sharable';
+
 import {MatExpansionModule} from '@angular/material/expansion';
 const custom = [ClientsModule]
-const material = []
+const material = [MatExpansionModule, MatIconModule , MatButtonModule , MatToolbarModule,MatSidenavModule,MatListModule]
 @Component({
   selector: 'app-nav-bar',
   templateUrl: './nav-bar.component.html',
@@ -25,8 +25,8 @@ const material = []
     ...custom ,
     AsyncPipe,
     RouterOutlet,
-    CommonModule,ClientsModule , JsonPipe ,MatExpansionModule,
- MatIconModule , MatButtonModule , MatToolbarModule,MatSidenavModule,MatListModule
+    CommonModule,ClientsModule , JsonPipe ,...material
+
   ],
 })
 export class NavBarComponent {

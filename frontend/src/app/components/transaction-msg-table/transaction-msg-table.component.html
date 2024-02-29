@@ -17,6 +17,10 @@
         <th mat-header-cell *matHeaderCellDef mat-sort-header> To </th>
         <td mat-cell *matCellDef="let row"> {{row.To}} </td>
     </ng-container>
+        <ng-container matColumnDef="Nonce">
+            <th mat-header-cell *matHeaderCellDef mat-sort-header> Nonce </th>
+            <td mat-cell *matCellDef="let row"> {{row.Nonce}} </td>
+        </ng-container>
     <ng-container matColumnDef="Msg">
         <th mat-header-cell *matHeaderCellDef mat-sort-header> Message  </th>
         <td mat-cell *matCellDef="let row"> {{row.Msg}} </td>

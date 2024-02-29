@@ -13,9 +13,9 @@ const materail = [  MatTableModule]
 })
 export class CoinTransactionTableComponent {
 
-  displayedColumns: string[] = ['id', 'From', 'To', 'Coins' , 'Reason', 'SendTime'];
+  displayedColumns: string[] = ['id', 'From', 'To' ,'Nonce', 'Coins' , 'Reason', 'SendTime'];
   
-  @Input() data : transactionCoinResponse = {transactions:[] , nodeDetails:{indexId:0 , nodeId:"" ,uri:""}}
+  @Input() data : transactionCoinResponse = {transactions:[] , nodeDetails:{indexId:0 , nodeId:"" ,uri:"" ,uriPublic:""}}
   ngOnInit(): void {
    
   }

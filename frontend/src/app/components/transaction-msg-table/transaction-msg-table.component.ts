@@ -20,7 +20,7 @@ const materail = [  MatTableModule, MatPaginatorModule]
 })
 export class TransactionMsgTableComponent implements OnInit {
  
-  displayedColumns: string[] = ['id', 'From', 'To', 'Msg' , 'SendTime'];
+  displayedColumns: string[] = ['id', 'From','Nonce' , 'To', 'Msg' , 'SendTime'];
   
   @Input() data :Array<TransactionMsgRow> = [] 
   ngOnInit(): void {

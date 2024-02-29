@@ -2,6 +2,7 @@ export interface  nodeDetails  {
     nodeId:  string 
     indexId:number 
     uri:string
+    uriPublic:string
 }
 
 

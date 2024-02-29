@@ -6,6 +6,7 @@ import { SendComponent } from './pages/send/send.component';
 import { AllMsgComponent } from './pages/all-msg/all-msg.component';
 import { TrasferCoinsComponent } from './pages/trasfer-coins/trasfer-coins.component';
 import { SendMessageFormPageComponent } from './pages/send-message-form-page/send-message-form-page.component';
+import { AllTransacionsCoinsComponent } from './pages/all-transacions-coins/all-transacions-coins.component';
 
 export const routes: Routes = [
 {path:'' , component:HomePageComponent},
@@ -13,5 +14,6 @@ export const routes: Routes = [
 {path:'send' , component:SendComponent},
 {path:'allMessages' , component:AllMsgComponent},
 {path:'transfer' , component:TrasferCoinsComponent},
-{path:'sendMessage' , component:SendMessageFormPageComponent}
+{path:'sendMessage' , component:SendMessageFormPageComponent},
+{path:'transactions' ,component:AllTransacionsCoinsComponent}
 ];

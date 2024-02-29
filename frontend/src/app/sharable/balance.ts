@@ -7,6 +7,7 @@ export interface  TransactionCoinsRow{
     From :number 
     To: number  
     Coins: number 
+    Nonce:number
     Reason: string 
     SendTime :number 
     TransactionId:string

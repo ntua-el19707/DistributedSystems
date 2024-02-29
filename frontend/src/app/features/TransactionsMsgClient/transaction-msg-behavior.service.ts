@@ -9,11 +9,11 @@ import { TransactionMsgRow, transactionMsgResponse } from '../../sharable';
   providedIn: TransactionsMsgClientModule
 })
 export class TransactionMsgBehaviorService {
-  #inboxBehaviorSubject:BehaviorSubject<transactionMsgResponse> = new BehaviorSubject<transactionMsgResponse>({nodeDetails:{indexId:0 , nodeId:"" , uri:""},transactions:[]})
+  #inboxBehaviorSubject:BehaviorSubject<transactionMsgResponse> = new BehaviorSubject<transactionMsgResponse>({nodeDetails:{indexId:0 , nodeId:"" , uri:"" ,uriPublic:""},transactions:[]})
   #inboxBehaviorTransactionsSubject:BehaviorSubject<Array<TransactionMsgRow>> = new BehaviorSubject<Array<TransactionMsgRow>>([])
-  #sendBehaviorSubject:BehaviorSubject<transactionMsgResponse> = new BehaviorSubject<transactionMsgResponse>({nodeDetails:{indexId:0 , nodeId:"" , uri:""},transactions:[]})
+  #sendBehaviorSubject:BehaviorSubject<transactionMsgResponse> = new BehaviorSubject<transactionMsgResponse>({nodeDetails:{indexId:0 , nodeId:"" , uri:"" ,uriPublic:""},transactions:[]})
   #sendBehaviorTransactionsSubject:BehaviorSubject<Array<TransactionMsgRow>> = new BehaviorSubject<Array<TransactionMsgRow>>([])
-  #allBehaviorSubject:BehaviorSubject<transactionMsgResponse> = new BehaviorSubject<transactionMsgResponse>({nodeDetails:{indexId:0 , nodeId:"" , uri:""},transactions:[]})
+  #allBehaviorSubject:BehaviorSubject<transactionMsgResponse> = new BehaviorSubject<transactionMsgResponse>({nodeDetails:{indexId:0 , nodeId:"" , uri:"", uriPublic:""},transactions:[]})
   #allBehaviorTransactionsSubject:BehaviorSubject<Array<TransactionMsgRow>> = new BehaviorSubject<Array<TransactionMsgRow>>([])
   constructor(private transactionMsgClientService :TransactionMsgClientService) { }
   fetchSend() {

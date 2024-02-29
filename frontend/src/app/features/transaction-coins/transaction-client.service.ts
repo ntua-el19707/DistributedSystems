@@ -20,6 +20,9 @@ export class TransactionClientService {
   getMyTransactions():Observable<transactionCoinResponse>{
     return this.http.get("/api/v1/transactions") as  Observable<transactionCoinResponse>
   }
+  getAllTransactions():Observable<transactionCoinResponse>{
+    return this.http.get("/api/v1/transactionsAll") as  Observable<transactionCoinResponse>
+  }
   postTransaction(to:number , coins:number ,happening$:BehaviorSubject<boolean>){
    happening$.next(true)
     const body:transactionCoinRequest = {

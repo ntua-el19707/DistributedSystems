@@ -28,7 +28,15 @@
     <a mat-list-item href="/#/allMessages">All Messages</a>
   </mat-expansion-panel>
 
+  <mat-expansion-panel hideToggle>
+    <mat-expansion-panel-header>
+      <mat-panel-title>
+        Transaction Coins Overview
+      </mat-panel-title>
+    </mat-expansion-panel-header>
+    <a mat-list-item href="/#/transactions">Transactions </a>
 
+  </mat-expansion-panel>
   <!-- Transfer forms -->
   <mat-expansion-panel hideToggle>
     <mat-expansion-panel-header>
@@ -43,7 +51,7 @@
     </mat-nav-list>
   </mat-sidenav>
   <mat-sidenav-content>
-    <mat-toolbar color="primary">
+    <mat-toolbar color="primary" style="width:100%">
       @if (isHandset$ | async) {
         <button
           type="button"
@@ -53,12 +61,12 @@
           <mat-icon aria-label="Side nav toggle icon">menu</mat-icon>
         </button>
       }
-      <span>BCC</span>
+      <span style="width:20%">BCC</span>
     
-      <span *ngIf="dataSource$ | async as  clients;" >
-<div style="display: flex; align-items: center; justify-content: flex-end;">
+      <span *ngIf="dataSource$ | async as  clients;" style="width:80%" >
+<div style="display: flex; align-items: center; justify-content: flex-end;width:100%">
             @for(c of clients ; track c){
-        <button (click)="openInNewTab(c.uri)"> go to  node  {{c.indexId}} </button>
+        <button (click)="openInNewTab(c.uriPublic)" matButton> go to  node  {{c.indexId}} </button>
             }
 </div>
       </span>

@@ -8,7 +8,7 @@ import { BehaviorSubject } from 'rxjs';
   providedIn: NodeInfoModule
 })
 export class NodeInfoBehaviorService { 
-  #nodeInfoBehaviorSubject:BehaviorSubject<nodeDetails> = new BehaviorSubject({nodeId:"" , indexId:0 , uri:""} )
+  #nodeInfoBehaviorSubject:BehaviorSubject<nodeDetails> = new BehaviorSubject({nodeId:"" , indexId:0 , uri:"", uriPublic:"string"} )
   #nodeInfoOthersBehaviorSubject:BehaviorSubject<Array<number>> = new BehaviorSubject<Array<number>>([]) 
   constructor(private  nodeInfoClientService:NodeInfoClientService) { }
   fetchNodeInfo(){
