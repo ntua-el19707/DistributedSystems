@@ -39,6 +39,7 @@ type RegisterImpl struct {
 	Who       string
 	MyPk      rsa.PublicKey
 	MyId      string
+	UriPublic string
 	Providers RegisterProviders
 }
 
@@ -55,6 +56,7 @@ func (r *RegisterImpl) Register() {
 	body.PublicKey = r.MyPk
 	body.Client.Id = r.MyId
 	body.Client.Uri = r.Me
+	body.Client.UriPublic = r.UriPublic
 
 	payload, err := json.Marshal(body)
 	if err != nil {

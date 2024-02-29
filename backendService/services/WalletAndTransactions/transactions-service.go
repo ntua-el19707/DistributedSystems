@@ -22,6 +22,7 @@ type TransactionService interface {
 	GetTransaction() ([]byte, error)
 	GetSigniture() []byte
 	GetAmount() float64
+	SetNonce(nonce int)
 	GetInterface() interface{}
 }
 type TransactionsStandard struct {
@@ -147,6 +148,13 @@ func (transaction *TransactionCoins) semiConstruct() error {
 }
 
 const ErrRequestFaildDueTotalMoneyFroze string = "Request To  sent %.3f from makes  (total  -  frozen ) %.3f\n"
+
+func (t *TransactionCoins) SetNonce(nonce int) {
+	t.Transaction.Transaction.BillDetails.Nonce = nonce
+}
+func (t *TransactionMsg) SetNonce(nonce int) {
+	t.Transaction.Transaction.BillDetails.Nonce = nonce
+}
 
 /*
 *

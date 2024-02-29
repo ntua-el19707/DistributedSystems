@@ -20,9 +20,10 @@ type BlockMessageMessageRabbitMq struct {
 	//TODO ?  may sign the  block Signiture []byte          `json:"signiture"`
 }
 type ClientInfo struct {
-	Id      string `json:"nodeId"`
-	IndexId int    `json:"indexId"`
-	Uri     string `json:"uri"`
+	Id        string `json:"nodeId"`
+	IndexId   int    `json:"indexId"`
+	Uri       string `json:"uri"`
+	UriPublic string `json:"uriPublic"`
 }
 type RabbitMqSystemInfoPack struct {
 	Clients         []ClientRequestBody `json:"Clients"`

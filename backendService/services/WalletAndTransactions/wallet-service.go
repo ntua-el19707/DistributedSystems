@@ -44,6 +44,7 @@ type WalletStructV1Implementation struct {
 	frozen             float64
 	mu                 sync.Mutex
 	happenConstruction bool
+	nonce              int
 	signMethod         func(io.Reader, *rsa.PrivateKey, crypto.Hash, []byte) ([]byte, error)
 	LoggerService      Logger.LoggerService
 }
@@ -121,6 +122,14 @@ func (wallet *WalletStructV1Implementation) Sign(transactionService TransactionS
 	logger := wallet.LoggerService
 	logger.Log("Start  Sign  transaction")
 	//define  SignTransaction
+	setNonce := func() {
+		var nonceLocal int
+		wallet.mu.Lock()
+		nonceLocal = wallet.nonce
+		wallet.nonce++
+		wallet.mu.Unlock()
+		transactionService.SetNonce(nonceLocal)
+	}
 	SignDocument := func(transaction []byte) ([]byte, error) {
 		// hashed  transaction
 		hashed := sha256.Sum256(transaction)
@@ -132,6 +141,10 @@ func (wallet *WalletStructV1Implementation) Sign(transactionService TransactionS
 		}
 		return Signature, nil
 	}
+	logger.Log("start seting  nonce ")
+
+	setNonce()
+	logger.Log("commit seting  nonce")
 	logger.Log("Start  getTransaction")
 	transaction, err := transactionService.GetTransaction()
 	if err != nil {
@@ -143,6 +156,7 @@ func (wallet *WalletStructV1Implementation) Sign(transactionService TransactionS
 
 	}
 	logger.Log("Commit getTransaction")
+
 	// Sign the document
 	logger.Log("Start SignDocument")
 	Signature, err := SignDocument(transaction)

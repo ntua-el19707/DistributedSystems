@@ -13,6 +13,7 @@ type TransactionCoinRow struct {
 	From          int     `json:"From"`
 	To            int     `json:"To"`
 	Coins         float64 `json:"Coins"`
+	Nonce         int     `json:"Nonce"`
 	Reason        string  `json:"Reason"`
 	Time          int64   `json:"SendTime"`
 	TransactionId string  `json:"TransactionId"`
@@ -33,7 +34,7 @@ func (transactions *TransactionListCoin) Map(t []entitys.TransactionCoins, Syste
 			nodeFrom, _ = SystemInfoService.NodeDetails(from)
 		}
 		nodeTo, _ := SystemInfoService.NodeDetails(billDetails.Bill.To.Address)
-		row := TransactionCoinRow{From: nodeFrom.IndexId, To: nodeTo.IndexId, Coins: transaction.Amount, Reason: transaction.Reason, Time: billDetails.Created_at, TransactionId: billDetails.Transaction_id}
+		row := TransactionCoinRow{From: nodeFrom.IndexId, To: nodeTo.IndexId, Nonce: billDetails.Nonce, Coins: transaction.Amount, Reason: transaction.Reason, Time: billDetails.Created_at, TransactionId: billDetails.Transaction_id}
 		(*transactions)[i] = row
 	}
 }

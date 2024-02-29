@@ -185,8 +185,9 @@ func (service *BlockChainCoinsImpl) InsertTransaction(t entitys.TransactionCoinS
 		return err
 	}
 
-	if lastBlock.BlockEntity.Capicity <= len(lastBlock.Transactions) {
-		//Mine Block
+	//	if lastBlock.BlockEntity.Capicity <= len(lastBlock.Transactions) {
+	//Mine Block
+	if lastBlock.BlockEntity.Capicity == service.index {
 		logger.Log("Start  Mine Block Coins")
 
 		stake := Stake.StakeCoinBlockChain{
@@ -233,7 +234,11 @@ func (service *BlockChainCoinsImpl) InsertTransaction(t entitys.TransactionCoinS
 	From := transactions[0].BillDetails.Bill.From.Address
 	//Stamp Validatori
 	transactions[0].BillDetails.Bill.To.Address = validator
-	service.Chain.InsertTransactions(transactions)
+	service.Chain.InsertATransactions(service.index, transactions[0])
+	service.index++
+	service.Chain.InsertATransactions(service.index, transactions[1])
+	service.index++
+	//service.Chain.InsertTransactions(transactions)
 	if EqualPublicKeys(&processPublicKey, &From) {
 		amount := transactions[0].Amount + transactions[1].Amount
 		err := service.Services.WalletServiceInstance.UnFreeze(amount)

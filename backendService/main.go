@@ -18,7 +18,7 @@ func Fall(err error) {
 		log.Fatal(err.Error())
 	}
 }
-func GetEnviroments() (int, int, bool, string, string, string, string) {
+func GetEnviroments() (int, int, bool, string, string, string, string, string) {
 	err := godotenv.Load()
 	if err != nil {
 		log.Fatalf("Could  not  load  enviroment  varibales  due to %v", err)
@@ -50,8 +50,8 @@ func GetEnviroments() (int, int, bool, string, string, string, string) {
 	me = fmt.Sprintf("http://%s:%d", me, serverPort)
 	node := os.Getenv("nodeId")
 	rabbitMqUri := os.Getenv("rabbitMQ")
-
-	return serverPort, workers, coordinator, host, me, node, rabbitMqUri
+	publicUri := os.Getenv("publicUri")
+	return serverPort, workers, coordinator, host, me, node, rabbitMqUri, publicUri
 
 }
 func GetScaleFactors() (float64, float64) {
@@ -82,7 +82,7 @@ var sFm, sFc float64
 	main - function  of  the project START
 */
 func main() {
-	port, workers, coordinator, curi, muri, id, rabbitMqUri := GetEnviroments()
+	port, workers, coordinator, curi, muri, id, rabbitMqUri, publicUri := GetEnviroments()
 	var perNode float64
 	var capicityMsg, capicityCoin int
 	if coordinator {
@@ -93,7 +93,7 @@ func main() {
 		Fall(err)
 	}
 	serverPort := fmt.Sprintf(":%d", port)
-	services.BootOrDie(id, curi, muri, rabbitMqUri, coordinator, workers, capicityMsg, capicityCoin, sFm, sFc, perNode)
+	services.BootOrDie(id, curi, muri, rabbitMqUri, publicUri, coordinator, workers, capicityMsg, capicityCoin, sFm, sFc, perNode)
 	setUpServer(serverPort, coordinator)
 }
 

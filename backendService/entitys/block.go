@@ -88,7 +88,7 @@ func (block *BlockCoinEntity) Genesis(Validator rsa.PublicKey, Parent, Current s
 		block.perNode = 1000.0
 	}*/
 	total := float64(workers) * perNode
-	block.Transactions = make([]TransactionCoins, 2)
+	block.Transactions = make([]TransactionCoins, capicity)
 	bill := BillingInfo{To: Client{Address: Validator}}
 	BillDetails := TransactionDetails{Bill: bill, Created_at: time.Now().Unix()}
 	initial := TransactionCoins{Amount: total / 2, Reason: "BootStrap", BillDetails: BillDetails}
@@ -98,9 +98,17 @@ func (block *BlockCoinEntity) Genesis(Validator rsa.PublicKey, Parent, Current s
 }
 
 func (b *BlockCoinEntity) MineBlock(validator rsa.PublicKey, previousBlock Block, logger Logger.LoggerService, hasher Hasher.HashService) error {
-	return b.BlockEntity.MineBlock(validator, previousBlock, logger, hasher)
+	err := b.BlockEntity.MineBlock(validator, previousBlock, logger, hasher)
+	if err != nil {
+		return err
+	}
+	b.Transactions = make([]TransactionCoins, b.BlockEntity.Capicity)
+	return nil
 }
 func equalPublicKeys(key1, key2 *rsa.PublicKey) bool {
+	if key1 == nil || key2 == nil {
+		return key1 == key2
+	}
 	return key1.N.Cmp(key2.N) == 0 && key1.E == key2.E
 }
 
@@ -113,14 +121,11 @@ func equalPublicKeys(key1, key2 *rsa.PublicKey) bool {
 */
 func (blockCoin BlockCoinEntity) FindLocaleBalanceOf(key rsa.PublicKey, sumNotify chan float64) {
 	var sum float64
-	var zero rsa.PublicKey
 	for _, t := range blockCoin.Transactions {
 		from := t.BillDetails.Bill.From.Address
 		to := t.BillDetails.Bill.To.Address
-		if zero != from {
-			if equalPublicKeys(&from, &key) {
-				sum -= t.Amount
-			}
+		if equalPublicKeys(&from, &key) {
+			sum -= t.Amount
 		}
 		if equalPublicKeys(&to, &key) {
 			sum += t.Amount
@@ -298,7 +303,7 @@ func (b *BlockCoinEntity) InsertOneTransaction(i int, t TransactionCoins) error 
 	if i >= capicity {
 		return errors.New(fmt.Sprintf(errOutOfBounds, i, capicity))
 	}
-	(*b).Transactions[i] = t
+	b.Transactions[i] = t
 	return nil
 }
 
@@ -307,6 +312,6 @@ func (b *BlockMessage) InsertOneTransaction(i int, t TransactionMsg) error {
 	if i >= capicity {
 		return errors.New(fmt.Sprintf(errOutOfBounds, i, capicity))
 	}
-	(*b).Transactions[i] = t
+	b.Transactions[i] = t
 	return nil
 }

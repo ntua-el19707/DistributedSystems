@@ -64,7 +64,7 @@ func setQueues(node, rabbitMqUri string) {
 
 }
 
-func registerAndSystemInfo(coordinator bool, ExpectedWorkers int, Me, hostCoordinator, node string) {
+func registerAndSystemInfo(coordinator bool, ExpectedWorkers int, Me, hostCoordinator, node, publicUri string) {
 	logger := Logger.Logger{ServiceName: "register and system info Loader"}
 	err := logger.Construct()
 	if err != nil {
@@ -83,6 +83,7 @@ func registerAndSystemInfo(coordinator bool, ExpectedWorkers int, Me, hostCoordi
 		register.Me = Me
 		register.MyPk = WalletService.GetPub()
 		register.MyId = node
+		register.UriPublic = publicUri
 		bootStrapOrDie(&register, &logger)
 		logger.Log("commit Creating  register  service")
 		register.Register()
@@ -93,7 +94,7 @@ func registerAndSystemInfo(coordinator bool, ExpectedWorkers int, Me, hostCoordi
 	} else {
 		var params entitys.ClientRequestBody
 		params.PublicKey = WalletService.GetPub()
-		clientInfo := entitys.ClientInfo{Id: node, Uri: Me}
+		clientInfo := entitys.ClientInfo{Id: node, Uri: Me, UriPublic: publicUri}
 		params.Client = clientInfo
 		SystemInfoService.AddWorker(params)
 	}
@@ -235,7 +236,7 @@ func SetUp() {
 	}
 
 }
-func BootOrDie(node, hostC, Me, rabbitMqUri string, coordinator bool, ExpectedWorkers, capicityMsg, capicityCoin int, sFm, sFc, perNode float64) {
+func BootOrDie(node, hostC, Me, rabbitMqUri, publicUri string, coordinator bool, ExpectedWorkers, capicityMsg, capicityCoin int, sFm, sFc, perNode float64) {
 	scaleFactorMsg = sFm
 	scaleFactorCoin = sFc
 	setQueues(node, rabbitMqUri)
@@ -243,6 +244,6 @@ func BootOrDie(node, hostC, Me, rabbitMqUri string, coordinator bool, ExpectedWo
 	capicity_Coin = capicityCoin
 	per_Node = perNode
 	expectWorkers = ExpectedWorkers
-	registerAndSystemInfo(coordinator, ExpectedWorkers, Me, hostC, node)
+	registerAndSystemInfo(coordinator, ExpectedWorkers, Me, hostC, node, publicUri)
 	providers(coordinator)
 }
