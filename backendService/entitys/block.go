@@ -105,11 +105,16 @@ func (b *BlockCoinEntity) MineBlock(validator rsa.PublicKey, previousBlock Block
 	b.Transactions = make([]TransactionCoins, b.BlockEntity.Capicity)
 	return nil
 }
-func equalPublicKeys(key1, key2 *rsa.PublicKey) bool {
-	if key1 == nil || key2 == nil {
+func equalPublicKeys(key1, key2 rsa.PublicKey) bool {
+	var zero rsa.PublicKey
+	if key1 == zero || key2 == zero {
 		return key1 == key2
 	}
-	return key1.N.Cmp(key2.N) == 0 && key1.E == key2.E
+
+	equal := func(key1, key2 *rsa.PublicKey) bool {
+		return key1.N.Cmp(key2.N) == 0 && key1.E == key2.E
+	}
+	return equal(&key1, &key2)
 }
 
 /*
@@ -124,10 +129,10 @@ func (blockCoin BlockCoinEntity) FindLocaleBalanceOf(key rsa.PublicKey, sumNotif
 	for _, t := range blockCoin.Transactions {
 		from := t.BillDetails.Bill.From.Address
 		to := t.BillDetails.Bill.To.Address
-		if equalPublicKeys(&from, &key) {
+		if equalPublicKeys(from, key) {
 			sum -= t.Amount
 		}
-		if equalPublicKeys(&to, &key) {
+		if equalPublicKeys(to, key) {
 			sum += t.Amount
 		}
 	}
@@ -162,12 +167,12 @@ func (b *BlockCoinEntity) GetTransactions(from, twoWay bool, keys []rsa.PublicKe
 				from := t.BillDetails.Bill.From.Address
 				to := t.BillDetails.Bill.To.Address
 				if zero != from {
-					if equalPublicKeys(&key, &from) {
+					if equalPublicKeys(key, from) {
 						add(t)
-					} else if equalPublicKeys(&key, &to) {
+					} else if equalPublicKeys(key, to) {
 						add(t)
 					}
-				} else if equalPublicKeys(&key, &to) {
+				} else if equalPublicKeys(key, to) {
 					add(t)
 				}
 			}
@@ -176,7 +181,7 @@ func (b *BlockCoinEntity) GetTransactions(from, twoWay bool, keys []rsa.PublicKe
 			for _, t := range b.Transactions {
 				from := t.BillDetails.Bill.From.Address
 				if zero != from {
-					if equalPublicKeys(&key, &from) {
+					if equalPublicKeys(key, from) {
 						add(t)
 					}
 				}
@@ -185,7 +190,7 @@ func (b *BlockCoinEntity) GetTransactions(from, twoWay bool, keys []rsa.PublicKe
 			key := keys[0]
 			for _, t := range b.Transactions {
 				to := t.BillDetails.Bill.To.Address
-				if equalPublicKeys(&key, &to) {
+				if equalPublicKeys(key, to) {
 					add(t)
 				}
 			}
@@ -198,9 +203,9 @@ func (b *BlockCoinEntity) GetTransactions(from, twoWay bool, keys []rsa.PublicKe
 			to := t.BillDetails.Bill.To.Address
 			if zero != from {
 
-				if equalPublicKeys(&fromKey, &from) && equalPublicKeys(&toKey, &to) {
+				if equalPublicKeys(fromKey, from) && equalPublicKeys(toKey, to) {
 					add(t)
-				} else if equalPublicKeys(&fromKey, &to) && equalPublicKeys(&toKey, &from) && twoWay {
+				} else if equalPublicKeys(fromKey, to) && equalPublicKeys(toKey, from) && twoWay {
 					add(t)
 				}
 			}
@@ -252,7 +257,7 @@ func (b *BlockMessage) GetTransactions(from, twoWay bool, keys []rsa.PublicKey, 
 			for _, t := range b.Transactions {
 				from := t.BillDetails.Bill.From.Address
 				to := t.BillDetails.Bill.To.Address
-				if equalPublicKeys(&key, &from) || equalPublicKeys(&key, &to) {
+				if equalPublicKeys(key, from) || equalPublicKeys(key, to) {
 					add(t)
 				}
 			}
@@ -260,7 +265,7 @@ func (b *BlockMessage) GetTransactions(from, twoWay bool, keys []rsa.PublicKey, 
 			key := keys[0]
 			for _, t := range b.Transactions {
 				from := t.BillDetails.Bill.From.Address
-				if equalPublicKeys(&key, &from) {
+				if equalPublicKeys(key, from) {
 					add(t)
 				}
 			}
@@ -268,7 +273,7 @@ func (b *BlockMessage) GetTransactions(from, twoWay bool, keys []rsa.PublicKey, 
 			key := keys[0]
 			for _, t := range b.Transactions {
 				to := t.BillDetails.Bill.To.Address
-				if equalPublicKeys(&key, &to) {
+				if equalPublicKeys(key, to) {
 					add(t)
 				}
 			}
@@ -280,9 +285,9 @@ func (b *BlockMessage) GetTransactions(from, twoWay bool, keys []rsa.PublicKey, 
 			from := t.BillDetails.Bill.From.Address
 			to := t.BillDetails.Bill.To.Address
 
-			if equalPublicKeys(&fromKey, &from) && equalPublicKeys(&toKey, &to) {
+			if equalPublicKeys(fromKey, from) && equalPublicKeys(toKey, to) {
 				add(t)
-			} else if equalPublicKeys(&fromKey, &to) && equalPublicKeys(&toKey, &from) && twoWay {
+			} else if equalPublicKeys(fromKey, to) && equalPublicKeys(toKey, from) && twoWay {
 				add(t)
 			}
 		}
