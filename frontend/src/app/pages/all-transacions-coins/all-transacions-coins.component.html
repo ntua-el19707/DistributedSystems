@@ -3,11 +3,8 @@
         <mat-card-title>Node Transaction coins</mat-card-title>
     </mat-card-header>
     <mat-card-content>
-        <mat-form-field>
-            <mat-label>Filter >= coins</mat-label>
-            <input matInput (keyup)="applyFilter($event)" placeholder="15" #input>
-        </mat-form-field>
-
+        <app-filter-transaction-coins style="width: 100%;"  [filter$]="filter$"></app-filter-transaction-coins>
+ 
 
         <div *ngIf="dataSourceList$ | async as data;">
             <app-coin-transaction-table [data]="data"></app-coin-transaction-table>

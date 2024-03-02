@@ -1,0 +1,36 @@
+<div class="custom-form">
+    <div style="display: flex;">
+        
+<mat-form-field class="custom-form-field">
+    <mat-label>Date Picker</mat-label>
+    <mat-date-range-input  [formGroup]="DateAndTimeForm.controls.DatePicker" [rangePicker]="picker">
+        <input (dateChange)="notify()" matStartDate placeholder="Start date" formControlName="start">
+        <input (dateChange)="notify()"   matEndDate placeholder="End date"      formControlName="end">
+    </mat-date-range-input>
+    <mat-hint>MM/DD/YYYY – MM/DD/YYYY</mat-hint>
+<mat-datepicker-toggle matIconSuffix [for]="picker"></mat-datepicker-toggle>
+<mat-date-range-picker #picker></mat-date-range-picker>
+</mat-form-field>
+
+<mat-form-field class="custom-form-field">
+    <mat-label>Start Time </mat-label>
+    <input type="string" matInput [formControl]="DateAndTimeForm.controls.Start"  (keyup)="applyFilter()">
+    @if (DateAndTimeForm.controls.Start.hasError('pattern')) {
+    <mat-error>Please enter a valid start time</mat-error>
+    }
+    @if (DateAndTimeForm.controls.Start.hasError('invalidTime')) {
+    <mat-error>Please enter a valid start time hr:mn:secs</mat-error>
+    }
+
+</mat-form-field>
+<mat-form-field class="custom-form-field">
+    <mat-label>End Time </mat-label>
+    <input type="string" matInput [formControl] ="DateAndTimeForm.controls.End"  (keyup)="applyFilter()">
+    @if (DateAndTimeForm.controls.End.hasError('pattern')) {
+    <mat-error>Please enter a valid start time</mat-error>
+    }
+    @if (DateAndTimeForm.controls.End.hasError('invalidTime')) {
+    <mat-error>Please enter a valid start time hr:mn:secs</mat-error>
+    }
+</mat-form-field>
+</div></div>

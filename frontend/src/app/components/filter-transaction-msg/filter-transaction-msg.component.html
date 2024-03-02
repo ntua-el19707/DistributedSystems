@@ -1,0 +1,36 @@
+<form [formGroup]="filterForm" class="custom-form">
+    <div style="display: flex;">
+        @if(from){
+        <mat-form-field class="custom-form-field">
+            <mat-label>Select From Client </mat-label>
+            <mat-select (selectionChange)="notify()" [formControl]=" filterForm.controls.from">
+                <mat-option>--</mat-option>
+                @for (nodeDetails of clients; track nodeDetails) {
+                <mat-option [value]="nodeDetails">{{nodeDetails.indexId}}</mat-option>
+                }
+            </mat-select>
+            &nbsp;
+        </mat-form-field>
+        }
+        @if(to){
+        <mat-form-field class="custom-form-field">
+            <mat-label>Select To Client </mat-label>
+            <mat-select (selectionChange)="notify()" [formControl]="filterForm.controls.to">
+                <mat-option>--</mat-option>
+                @for (nodeDetails of clients; track nodeDetails) {
+                <mat-option [value]="nodeDetails">{{nodeDetails.indexId}}</mat-option>
+                }
+            </mat-select>
+            &nbsp;
+        </mat-form-field>
+         }
+        <mat-form-field class="custom-form-field">
+            <mat-label>Message </mat-label>
+            <input type="string" (keyup)="applyFilter()" matInput [formControl]=" filterForm.controls.message">
+         
+            &nbsp;
+        </mat-form-field>
+
+    </div>
+    <app-date-and-time-picker style="width: 100%;" [DateAndTimeForm$]="DateAndTimeForm$"></app-date-and-time-picker>
+</form>

@@ -1,5 +1,5 @@
-import { Component, OnInit } from '@angular/core';
-import { BehaviorSubject } from 'rxjs';
+import { Component, OnDestroy, OnInit } from '@angular/core';
+import { BehaviorSubject, Subscription } from 'rxjs';
 import { transactionCoinResponse } from '../../sharable';
 import { TransactionBehaviorService } from '../../features/transaction-coins/transaction-behavior.service';
 import { TransactionCoinsModule } from '../../features/transaction-coins/transaction-coins.module';
@@ -7,7 +7,9 @@ import { CoinTransactionTableComponent } from '../../components/coin-transaction
 import { AsyncPipe, CommonModule } from '@angular/common';
 import { MatCardModule } from '@angular/material/card';
 import { MatInputModule } from '@angular/material/input';
-const  custom = [TransactionCoinsModule,CoinTransactionTableComponent]
+import { FilterTransactionCoinsComponent } from '../../components/filter-transaction-coins/filter-transaction-coins.component';
+import { filterTranctionCoinSubject } from '../../features/filter-transaction-coin-toa-behavir-subject.service';
+const  custom = [TransactionCoinsModule,CoinTransactionTableComponent,FilterTransactionCoinsComponent]
 const common = [AsyncPipe , CommonModule]
 const material = [MatCardModule ,MatInputModule]
 @Component({
@@ -17,24 +19,27 @@ const material = [MatCardModule ,MatInputModule]
   templateUrl: './all-transacions-coins.component.html',
   styleUrl: './all-transacions-coins.component.scss'
 })
-export class AllTransacionsCoinsComponent implements OnInit{
+export class AllTransacionsCoinsComponent implements OnInit ,OnDestroy{
  readonly dataSourceList$:BehaviorSubject<transactionCoinResponse>
+ readonly #Subscription:Subscription = new Subscription()
+ filter$ :BehaviorSubject<filterTranctionCoinSubject> = new  BehaviorSubject({})
   typingTimer: any;
   constructor(private transactionBehaviorService:TransactionBehaviorService ){
     this.dataSourceList$ = this.transactionBehaviorService.getMyAllFilterTransactions()
+    this.#Subscription = this.filter$.subscribe(r=>{this.applyFilter(r)} )
   }
 ngOnInit(): void {
-    
     this.transactionBehaviorService.fetchAllTransactions()
 }
-applyFilter(event: Event){
+ngOnDestroy(): void {
+  this.#Subscription.unsubscribe()
+}
+private applyFilter(filter:filterTranctionCoinSubject){
     clearTimeout(this.typingTimer); // Clear any existing timer
-    const filterValue = (event.target as HTMLInputElement).value;
-   const numericFilterValue = parseFloat(filterValue)
+   
     this.typingTimer = setTimeout(() => { 
-     this.transactionBehaviorService.filterAllCoins(numericFilterValue)
-    
-  
+    this.transactionBehaviorService.filterAllCoins(filter)
+
     }, 1000);
   }
 }

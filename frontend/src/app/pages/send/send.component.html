@@ -3,10 +3,8 @@
         <mat-card-title>Node {{ t.nodeDetails.nodeId}} SEND</mat-card-title>
     </mat-card-header>
     <mat-card-content>
-        <mat-form-field>
-            <mat-label>Filter</mat-label>
-            <input matInput (keyup)="applyFilter($event)" placeholder="Ex. Hello" #input>
-        </mat-form-field>
+        <app-filter-transaction-msg [to]="to" [from]="from"   style="width: 100%;" [filter$]="filter$" ></app-filter-transaction-msg>
+      
 
 
         <div *ngIf="dataSourceList$ | async as data;">

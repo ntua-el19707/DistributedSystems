@@ -7,6 +7,8 @@ $small-coin-size: $coin-size * 0.110; // 10% of the size of the logo coin
 $font-size-coin: 15px;
 $font-size-small: 0.4 * $font-size-coin;
 $card-size: $coin-size * 1.15;
+$medium-coin-size: $coin-size * 0.5; 
+$font-size-medium: 0.8 * $font-size-coin;
 
 .card {
     width: $card-size;
@@ -41,6 +43,24 @@ align-items: center;
     justify-content: flex-end; // Align items to the right
     span {
         font-size: $font-size-small;
+        color: black;
+        font-weight: bold;
+        align-items: top;
+    }
+}
+
+.medium-coin {
+    width: $medium-coin-size;
+    height: $medium-coin-size;
+    background-color: #D4AF37; // Gold color
+    border-radius: 50%;
+    border: 3px solid #CD8500; // Slightly darker gold border
+    margin-right: 10px; // Space between the small coin and text
+    align-items: center;
+    justify-content: flex-end; // Align items to the right
+
+    span {
+        font-size: $font-size-medium;
         color: black;
         font-weight: bold;
         align-items: top;

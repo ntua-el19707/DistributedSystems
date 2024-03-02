@@ -4,6 +4,7 @@ import { HttpClient } from '@angular/common/http';
 import { BehaviorSubject, map} from 'rxjs';
 import { BalanceRsp, transactionCoinResponse } from '../../sharable';
 import { TransactionClientService } from './transaction-client.service';
+import { filterTranctionCoinSubject } from '../filter-transaction-coin-toa-behavir-subject.service';
 
 @Injectable({
   providedIn: TransactionCoinsModule
@@ -38,9 +39,18 @@ this.transactionClientService.getBalance().subscribe((r:BalanceRsp)=>{
 getMyFilterTransactions():BehaviorSubject<transactionCoinResponse> {
     return this.#myTransactionsfilterBehaviorSubject
   }
-  filterCoins(coin:number){
+  filterCoins(filter:filterTranctionCoinSubject){
     const  observable =  this.#myTransactionsBehaviorSubject.pipe(map((response:transactionCoinResponse )=>{
-      const filteredTransactions = response.transactions.filter(transaction => transaction.Coins >= coin);
+      const filteredTransactions = response.transactions.filter(transaction => {
+      return (!filter.To || transaction.To <= filter.To) &&
+            (!filter.Reason || transaction.Reason === filter.Reason)&& 
+            (!filter.From || transaction.From >= filter.From) &&
+             (!filter.CoinsMin || transaction.Coins >= filter.CoinsMin) &&
+             (!filter.CoinsMax || transaction.Coins <= filter.CoinsMax) &&
+             (!filter.SendTimeLess || transaction.SendTime >= filter.SendTimeLess) &&
+             (!filter.SendTimeMore || transaction.SendTime < filter.SendTimeMore);
+    })
+  
         return { ...response, transactions: filteredTransactions };
     }))
     observable.subscribe((r:transactionCoinResponse)=>{
@@ -61,9 +71,17 @@ return this.#allTransactionsfilterBehaviorSubject
       console.log(err)
     } , ()=>{})
   }
-  filterAllCoins(coin:number){
+  filterAllCoins(filter:filterTranctionCoinSubject){
     const  observable =  this.#allTransactionsBehaviorSubject.pipe(map((response:transactionCoinResponse )=>{
-      const filteredTransactions = response.transactions.filter(transaction => transaction.Coins >= coin);
+      const filteredTransactions = response.transactions.filter(transaction => {
+      return (!filter.To || transaction.To <= filter.To) &&
+             (!filter.From || transaction.From >= filter.From) &&
+             (!filter.Reason || transaction.Reason === filter.Reason)&& 
+             (!filter.CoinsMin || transaction.Coins >= filter.CoinsMin) &&
+             (!filter.CoinsMax || transaction.Coins <= filter.CoinsMax) &&
+             (!filter.SendTimeLess || transaction.SendTime >= filter.SendTimeLess) &&
+             (!filter.SendTimeMore || transaction.SendTime < filter.SendTimeMore);
+    })
         return { ...response, transactions: filteredTransactions };
     }))
     observable.subscribe((r:transactionCoinResponse)=>{

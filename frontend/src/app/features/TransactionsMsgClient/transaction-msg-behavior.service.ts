@@ -4,6 +4,7 @@ import { TransactionMsgClientService } from './transaction-msg-client.service';
 import { BehaviorSubject, Observable} from 'rxjs';
 import { map } from 'rxjs/operators';
 import { TransactionMsgRow, transactionMsgResponse } from '../../sharable';
+import { FilterTransactionMsg } from '../filter-transaction-msg-toa-behavir-subject.service';
 
 @Injectable({
   providedIn: TransactionsMsgClientModule
@@ -28,11 +29,8 @@ export class TransactionMsgBehaviorService {
  getSend():BehaviorSubject<transactionMsgResponse> {
     return this.#sendBehaviorSubject
   }
-  filterSend(msg:string){
-    const  observable =  this.#sendBehaviorSubject.pipe(map((response:transactionMsgResponse )=>{
-      const filteredTransactions = response.transactions.filter(transaction => transaction.Msg.includes(msg));
-        return { ...response, transactions: filteredTransactions };
-    }))
+  filterSend(filter:FilterTransactionMsg){
+    const  observable = this.FilterBehaviorSubject(filter , this.#sendBehaviorSubject)
     observable.subscribe((r:transactionMsgResponse)=>{
      this.#sendBehaviorTransactionsSubject.next(r.transactions)
     })
@@ -52,11 +50,8 @@ export class TransactionMsgBehaviorService {
  getAll():BehaviorSubject<transactionMsgResponse> {
     return this.#allBehaviorSubject
   }
-  filterAll(msg:string){
-    const  observable =  this.#allBehaviorSubject.pipe(map((response:transactionMsgResponse )=>{
-      const filteredTransactions = response.transactions.filter(transaction => transaction.Msg.includes(msg));
-        return { ...response, transactions: filteredTransactions };
-    }))
+  filterAll(filter:FilterTransactionMsg){
+    const  observable =  this.FilterBehaviorSubject(filter , this.#allBehaviorSubject)
     observable.subscribe((r:transactionMsgResponse)=>{
      this.#allBehaviorTransactionsSubject.next(r.transactions)
     })
@@ -76,16 +71,26 @@ export class TransactionMsgBehaviorService {
  getInbox():BehaviorSubject<transactionMsgResponse> {
     return this.#inboxBehaviorSubject
   }
-  filter(msg:string){
-    const  observable =  this.#inboxBehaviorSubject.pipe(map((response:transactionMsgResponse )=>{
-      const filteredTransactions = response.transactions.filter(transaction => transaction.Msg.includes(msg));
-        return { ...response, transactions: filteredTransactions };
-    }))
+  filter(filter:FilterTransactionMsg){
+    const  observable =  this.FilterBehaviorSubject(filter , this.#inboxBehaviorSubject)
     observable.subscribe((r:transactionMsgResponse)=>{
      this.#inboxBehaviorTransactionsSubject.next(r.transactions)
     })
   }
   getInboxTransactions():BehaviorSubject<Array<TransactionMsgRow>>{
     return this.#inboxBehaviorTransactionsSubject
+  }
+  FilterBehaviorSubject(filter:FilterTransactionMsg , subject: BehaviorSubject<transactionMsgResponse>):Observable<transactionMsgResponse>{
+      const  observable =  subject.pipe(map((response:transactionMsgResponse )=>{
+      const filteredTransactions = response.transactions.filter(transaction => {
+      return (!filter.To || transaction.To <= filter.To) &&
+             (!filter.From || transaction.From >= filter.From) &&
+             (!filter.Message || transaction.Msg.includes(filter.Message))&& 
+             (!filter.SendTimeLess || transaction.SendTime >= filter.SendTimeLess) &&
+             (!filter.SendTimeMore || transaction.SendTime < filter.SendTimeMore);
+    })
+        return { ...response, transactions: filteredTransactions };
+    }))
+    return observable
   }
 }

@@ -1,0 +1,57 @@
+<form [formGroup]="filterForm" class="custom-form">
+   <div style="display: flex;">
+        <mat-form-field class="custom-form-field">
+            <mat-label>Select From Client </mat-label>
+            <mat-select (selectionChange)="notify()" [formControl]=" filterForm.controls.from">
+                <mat-option>--</mat-option>
+                @for (nodeDetails of clients; track nodeDetails) {
+                <mat-option [value]="nodeDetails">{{nodeDetails.indexId}}</mat-option>
+                }
+            </mat-select>
+            &nbsp;
+        </mat-form-field>
+
+        <mat-form-field class="custom-form-field">
+            <mat-label>Select To Client </mat-label>
+            <mat-select (selectionChange)="notify()" [formControl]="filterForm.controls.to">
+                <mat-option>--</mat-option>
+                @for (nodeDetails of clients; track nodeDetails) {
+                <mat-option [value]="nodeDetails">{{nodeDetails.indexId}}</mat-option>
+                }
+            </mat-select>
+            &nbsp;
+        </mat-form-field>
+
+    <mat-form-field class="custom-form-field">
+        <mat-label>Coins Min </mat-label>
+        <input type="string"  (keyup)="applyFilter()"  matInput [formControl]=" filterForm.controls.coinsMin">
+        @if (filterForm.controls.coinsMin.hasError('pattern')) {
+        <mat-error>Please enter a valid coins</mat-error>
+        }
+        &nbsp;
+    </mat-form-field>
+  
+
+ 
+  
+    <mat-form-field class="custom-form-field">
+        <mat-label>Coins Max </mat-label>
+        <input type="string"  (keyup)="applyFilter()"  matInput [formControl]=" filterForm.controls.coinsMax">
+        @if (filterForm.controls.coinsMax.hasError('pattern')) {
+        <mat-error>Please enter a valid coins</mat-error>
+    }
+
+</mat-form-field>
+        <mat-form-field class="custom-form-field">
+            <mat-label>Select To Reason </mat-label>
+            <mat-select (selectionChange)="notify()" [formControl]="filterForm.controls.reason">
+                <mat-option>--</mat-option>
+                @for (reason of reasons; track reason) {
+                <mat-option [value]="reason">{{reason}}</mat-option>
+                }
+            </mat-select>
+            &nbsp;
+        </mat-form-field>
+    </div>
+    <app-date-and-time-picker style="width: 100%;" [DateAndTimeForm$]="DateAndTimeForm$"></app-date-and-time-picker>
+</form>

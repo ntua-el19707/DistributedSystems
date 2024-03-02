@@ -1,14 +1,16 @@
-import { Component } from '@angular/core';
+import { Component, OnDestroy } from '@angular/core';
 import { TransactionMsgTableComponent } from '../../components/transaction-msg-table/transaction-msg-table.component';
 import { AsyncPipe, CommonModule } from '@angular/common';
 import { TransactionMsgRow, transactionMsgResponse } from '../../sharable';
-import { BehaviorSubject} from 'rxjs';
+import { BehaviorSubject, Subscription} from 'rxjs';
 import { MatCardModule } from '@angular/material/card';
 import { TransactionsMsgClientModule } from '../../features/TransactionsMsgClient/transactions-msg-client.module';
 import { TransactionMsgBehaviorService } from '../../features/TransactionsMsgClient/transaction-msg-behavior.service';
 import {MatInputModule} from '@angular/material/input';
 import {MatFormFieldModule} from '@angular/material/form-field';
-const custom = [TransactionMsgTableComponent ,TransactionsMsgClientModule]
+import { FilterTransactionMsg } from '../../features/filter-transaction-msg-toa-behavir-subject.service';
+import { FilterTransactionMsgComponent } from '../../components/filter-transaction-msg/filter-transaction-msg.component';
+const custom = [FilterTransactionMsgComponent, TransactionMsgTableComponent ,TransactionsMsgClientModule]
 const common = [AsyncPipe , CommonModule]
 const material = [MatCardModule ,MatInputModule]
 @Component({
@@ -18,28 +20,26 @@ const material = [MatCardModule ,MatInputModule]
   templateUrl: './inbox.component.html',
   styleUrl: './inbox.component.scss'
 })
-export class InboxComponent {
+export class InboxComponent implements OnDestroy {
   readonly dataSource$:BehaviorSubject<transactionMsgResponse>
-   readonly dataSourceList$:BehaviorSubject<Array<TransactionMsgRow>>
-  typingTimer: any;
+  readonly dataSourceList$:BehaviorSubject<Array<TransactionMsgRow>>
 
+to:boolean = false  
+  from:boolean = true
+  readonly #Subscription:Subscription = new Subscription()
+  filter$ :BehaviorSubject<FilterTransactionMsg> = new  BehaviorSubject({})
   constructor(private transactionMsgBehaviorService:TransactionMsgBehaviorService){
     this.transactionMsgBehaviorService.fetchInbox()
     this.dataSource$ = transactionMsgBehaviorService.getInbox()
     this.dataSourceList$ = transactionMsgBehaviorService.getInboxTransactions()
+   this.#Subscription = this.filter$.subscribe(r=>{this.applyFilter(r)} )
   }
-applyFilter(event: Event){
-    clearTimeout(this.typingTimer); // Clear any existing timer
-    const filterValue = (event.target as HTMLInputElement).value;
-
-
-    this.typingTimer = setTimeout(() => {
- 
-     this.transactionMsgBehaviorService.filter(filterValue)
-    
-  
-    }, 1000);
+  ngOnDestroy(): void {
+    this.#Subscription.unsubscribe()
   }
+private applyFilter(filter:FilterTransactionMsg){
+   this.transactionMsgBehaviorService.filter(filter)
+}
 
 
 }

@@ -1,0 +1,14 @@
+$display:flex ; 
+$customWidth:20% ; 
+.custom-form {
+    display: $display;
+    width: 100%; 
+    flex-direction: column;
+}
+
+
+.custom-form-field {
+    width:0.95 *  $customWidth; 
+    margin-right: 0.05 * $customWidth;
+  
+}
