@@ -108,7 +108,7 @@ func (b *BlockCoinEntity) MineBlock(validator rsa.PublicKey, previousBlock Block
 func equalPublicKeys(key1, key2 rsa.PublicKey) bool {
 	var zero rsa.PublicKey
 	if key1 == zero || key2 == zero {
-		return key1 == key2
+		return false
 	}
 
 	equal := func(key1, key2 *rsa.PublicKey) bool {
@@ -157,7 +157,11 @@ func (b *BlockCoinEntity) GetTransactions(from, twoWay bool, keys []rsa.PublicKe
 	}
 	var zero rsa.PublicKey
 	if len(keys) == 0 {
+		var zero TransactionCoins
 		for _, t := range b.Transactions {
+			if t == zero {
+				break
+			}
 			add(t)
 		}
 	} else if len(keys) == 1 {
@@ -224,14 +228,21 @@ type BlockMessage struct {
 func (block *BlockMessage) Genesis(Validator rsa.PublicKey, Parent, Current string, capicity int, logger Logger.LoggerService) {
 	blockSize := capicity
 	block.BlockEntity.Genesis(Validator, Parent, Current, blockSize, logger)
+	block.Transactions = make([]TransactionMsg, blockSize)
 	logger.Log(fmt.Sprintf("Created  Genesis Block Message  %s", block.BlockEntity.CurrentHash))
 }
 func (b *BlockMessage) MineBlock(validator rsa.PublicKey, previousBlock Block, logger Logger.LoggerService, hasher Hasher.HashService) error {
-	return b.BlockEntity.MineBlock(validator, previousBlock, logger, hasher)
+	err := b.BlockEntity.MineBlock(validator, previousBlock, logger, hasher)
+	if err != nil {
+		return err
+	}
+	b.Transactions = make([]TransactionMsg, b.BlockEntity.Capicity)
+	return nil
 }
 func (b *BlockMessage) GetTransactions(from, twoWay bool, keys []rsa.PublicKey, times []int64) []TransactionMsg {
 	var list []TransactionMsg
 	add := func(t TransactionMsg) {
+
 		if len(times) == 0 {
 			list = append(list, t)
 		} else if len(times) == 1 {
@@ -248,7 +259,11 @@ func (b *BlockMessage) GetTransactions(from, twoWay bool, keys []rsa.PublicKey, 
 	}
 
 	if len(keys) == 0 {
+		var zero TransactionMsg
 		for _, t := range b.Transactions {
+			if t == zero {
+				break
+			}
 			add(t)
 		}
 	} else if len(keys) == 1 {

@@ -22,6 +22,8 @@ type RabbitMqService interface {
 	PublishTractionMsgSet(t entitys.TransactionMessageSet) error
 	BroadCastSystemInfo(p entitys.RabbitMqSystemInfoPack) error
 	ConsumeNextSystemInfo() entitys.RabbitMqSystemInfoPack
+	PublishStake(stake entitys.StakePack, Dst QueueAndExchange) error
+	ConsumeStake(Dst QueueAndExchange) entitys.StakePack
 }
 
 const serviceName = "RabbitMqService"
@@ -46,6 +48,8 @@ type RabbitMqProviders struct {
 	BlockMsgQueueExchange           QueueAndExchange
 	BlockCoinQueueExchange          QueueAndExchange
 	SystemInfoQueue                 QueueAndExchange
+	StakeBlockCoinQueue             QueueAndExchange
+	StakeBlockMsgQueue              QueueAndExchange
 }
 
 func (p *RabbitMqProviders) Construct() error {
@@ -83,6 +87,18 @@ func (p *RabbitMqProviders) Construct() error {
 	err = MessageSystem.CreateAndBind(p.RabbitMqUri, p.SystemInfoQueue.Queue, p.SystemInfoQueue.Exchange, p.LoggerService)
 	if err != nil {
 		return err
+	}
+	if p.StakeBlockCoinQueue.Queue != "" && p.StakeBlockCoinQueue.Exchange != "" {
+		err = MessageSystem.CreateAndBind(p.RabbitMqUri, p.StakeBlockCoinQueue.Queue, p.StakeBlockCoinQueue.Exchange, p.LoggerService)
+		if err != nil {
+			return err
+		}
+	}
+	if p.StakeBlockMsgQueue.Queue != "" && p.StakeBlockMsgQueue.Exchange != "" {
+		err = MessageSystem.CreateAndBind(p.RabbitMqUri, p.StakeBlockMsgQueue.Queue, p.StakeBlockMsgQueue.Exchange, p.LoggerService)
+		if err != nil {
+			return err
+		}
 	}
 	p.ctr = true
 
@@ -201,6 +217,11 @@ func (service *RabbitMqImpl) ConsumeNextSystemInfo() entitys.RabbitMqSystemInfoP
 	return systemInfo
 }
 
+type PuslishStakeParam struct {
+	StakePack entitys.StakePack
+	Dst       QueueAndExchange
+}
+
 // Mock
 type MockRabbitMqImpl struct {
 	Channel                       chan entitys.TransactionCoinSet
@@ -233,8 +254,28 @@ type MockRabbitMqImpl struct {
 	CallConsumeBlockCoin          int
 	CallPublishTransactionCoinSet int
 	CallGetTransactionMsgChannel  int
+	ErrPublishStake               error
+	CallPublishStake              int
+	CallPublishStakeWith          []PuslishStakeParam
+	CallConsumeStake              int
+	CallConsumeStakeWith          []QueueAndExchange
+	indexConsumeStake             int
+	StakeConsumeRsp               []entitys.StakePack
 }
 
+func (mock *MockRabbitMqImpl) PublishStake(stakePack entitys.StakePack, Dst QueueAndExchange) error {
+	mock.CallPublishStake++
+	mock.CallPublishStakeWith = append(mock.CallPublishStakeWith, PuslishStakeParam{StakePack: stakePack, Dst: Dst})
+	return mock.ErrPublishStake
+}
+
+func (mock *MockRabbitMqImpl) ConsumeStake(Dst QueueAndExchange) entitys.StakePack {
+	mock.CallConsumeStake++
+	mock.CallConsumeStakeWith = append(mock.CallConsumeStakeWith, Dst)
+	index := mock.indexConsumeStake
+	mock.indexConsumeStake++
+	return mock.StakeConsumeRsp[index]
+}
 func (mock *MockRabbitMqImpl) Construct() error {
 	return nil
 }

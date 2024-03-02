@@ -2,6 +2,7 @@ package Stake
 
 import (
 	"Logger"
+	"RabbitMqService"
 	"crypto/rand"
 	"crypto/rsa"
 	"entitys"
@@ -412,7 +413,179 @@ func TestServiceStake(t *testing.T) {
 			GetCurrentHash2(prefixNew)
 		}(prefixNew)
 	}
+	TestForStakev3Struct := func(prefixOld string) {
+		fmt.Printf("%s  Test Cases for  stakev3\n", prefixOld)
+		prefixNew := fmt.Sprintf("%s%s", prefixOld, prefix)
+		TestCreateService := func(prefixOld string) {
+			fmt.Printf("%s  Test Cases for  creating stakev3\n", prefixOld)
+			prefixNew := fmt.Sprintf("%s%s", prefixOld, prefix)
+			workers, err := keyGen(4)
+			expectorNoErr(t, err, prefixOld)
+			TestSucceed := func(prefixOld string) {
+				fmt.Printf("%s  Test Cases for succeed  creating stakev3\n", prefixOld)
+				prefixNew := fmt.Sprintf("%s%s", prefixOld, prefix)
+				itShouldCreate := func(prefixOld string) {
+					bunny := &RabbitMqService.MockRabbitMqImpl{}
+					logger := &Logger.MockLogger{}
+					queueAndExchange := RabbitMqService.QueueAndExchange{Queue: "Queue", Exchange: "Topic"}
+					impl := StakeBCCv3struct{HashCurrent: "A hash", QueueAndExchange: queueAndExchange, Providers: StakeProviders2{LoggerService: logger, RabbitMq: bunny}}
+					err := impl.Construct()
+					expectorNoErr(t, err, prefixOld)
+					callExpector[bool](true, impl.vld, t, prefixOld, "service should be valid ")
+					callExpector[int](0, impl.totalWorkers, t, prefixOld, "total workers ")
+					fmt.Printf("%s  it  should  create a  service  for stakev3  with 0 workers\n", prefixOld)
+				}
+				itShouldCreate4 := func(prefixOld string) {
+					bunny := &RabbitMqService.MockRabbitMqImpl{}
+					logger := &Logger.MockLogger{}
+					queueAndExchange := RabbitMqService.QueueAndExchange{Queue: "Queue", Exchange: "Topic"}
+					impl := StakeBCCv3struct{Workers: workers, HashCurrent: "A hash", QueueAndExchange: queueAndExchange, Providers: StakeProviders2{LoggerService: logger, RabbitMq: bunny}}
+					err := impl.Construct()
+					expectorNoErr(t, err, prefixOld)
+					callExpector[bool](true, impl.vld, t, prefixOld, "service should be valid ")
+					callExpector[int](4, impl.totalWorkers, t, prefixOld, "total workers ")
+					fmt.Printf("%s  it  should  create a  service  for stakev3  with 4 workers\n", prefixOld)
+				}
+				itShouldCreate(prefixNew)
+				itShouldCreate4(prefixNew)
+			}
+			TestFail := func(prefixOld string) {
+				fmt.Printf("%s  Test Cases for Fail  creating stakev3\n", prefixOld)
+				prefixNew := fmt.Sprintf("%s%s", prefixOld, prefix)
+				itShouldFail := func(prefixOld string) {
+					logger := &Logger.MockLogger{}
+					queueAndExchange := RabbitMqService.QueueAndExchange{Queue: "Queue", Exchange: "Topic"}
+					impl := StakeBCCv3struct{Workers: workers, HashCurrent: "A hash", QueueAndExchange: queueAndExchange, Providers: StakeProviders2{LoggerService: logger}}
+					err := impl.Construct()
+					errMsg := fmt.Sprintf(errCouldNotFindProvider, "RabbitMqService")
+					callExpector[string](errMsg, err.Error(), t, prefixOld, "error")
+					callExpector[bool](false, impl.vld, t, prefixOld, "service should be invalid ")
+					fmt.Printf("%s  it  should Fail to  create a  service  for stakev3 no 'RabbitMqService'\n", prefixOld)
+				}
+				itShouldFailNoCurrentHash := func(prefixOld string) {
+					bunny := &RabbitMqService.MockRabbitMqImpl{}
+					logger := &Logger.MockLogger{}
+					queueAndExchange := RabbitMqService.QueueAndExchange{Queue: "Queue", Exchange: "Topic"}
+					impl := StakeBCCv3struct{Workers: workers, QueueAndExchange: queueAndExchange, Providers: StakeProviders2{LoggerService: logger, RabbitMq: bunny}}
+					err := impl.Construct()
+					callExpector[string](errCurrentHashShouldBeGiven, err.Error(), t, prefixOld, "error")
+					callExpector[bool](false, impl.vld, t, prefixOld, "service should be valid ")
+					fmt.Printf("%s  it  should Fail to  create a  service  for stakev3 no current hash \n", prefixOld)
 
+				}
+				itShouldFailNoQueueExchange := func(prefixOld string) {
+					bunny := &RabbitMqService.MockRabbitMqImpl{}
+					logger := &Logger.MockLogger{}
+					impl := StakeBCCv3struct{Workers: workers, HashCurrent: "a  hash", Providers: StakeProviders2{LoggerService: logger, RabbitMq: bunny}}
+					err := impl.Construct()
+					callExpector[string](errNotHaveQueueAndTopic, err.Error(), t, prefixOld, "error")
+					callExpector[bool](false, impl.vld, t, prefixOld, "service should be valid ")
+					fmt.Printf("%s  it  should Fail to  create a  service  for stakev3 not have queue  and exchange \n", prefixOld)
+
+				}
+
+				itShouldFail(prefixNew)
+				itShouldFailNoCurrentHash(prefixNew)
+				itShouldFailNoQueueExchange(prefixNew)
+			}
+			TestSucceed(prefixNew)
+			TestFail(prefixNew)
+		}
+		TestCaseFordistributionMap := func(prefixOld string) {
+			fmt.Printf("%s  Test Cases for  private  distributionMap stakev3\n", prefixOld)
+			prefixNew := fmt.Sprintf("%s%s", prefixOld, prefix)
+			workers, err := keyGen(6)
+			expectorNoErr(t, err, prefixOld)
+			itShouldCreateADistibutionMap := func(prefixOld string) {
+				//create service
+				bunny := &RabbitMqService.MockRabbitMqImpl{}
+				logger := &Logger.MockLogger{}
+				queueAndExchange := RabbitMqService.QueueAndExchange{Queue: "Queue", Exchange: "Topic"}
+				impl := StakeBCCv3struct{Workers: workers, HashCurrent: "A hash", Who: 3, QueueAndExchange: queueAndExchange, Providers: StakeProviders2{LoggerService: logger, RabbitMq: bunny}}
+				err := impl.Construct()
+				expectorNoErr(t, err, prefixOld)
+				callExpector[bool](true, impl.vld, t, prefixOld, "service should be valid ")
+				callExpector[int](6, impl.totalWorkers, t, prefixOld, "total workers ")
+
+				stakePacks := []entitys.StakePack{
+					entitys.StakePack{Node: 1, Bcc: 150},
+					entitys.StakePack{Node: 0, Bcc: 0},
+					entitys.StakePack{Node: 3, Bcc: 100},
+					entitys.StakePack{Node: 4, Bcc: 10},
+					entitys.StakePack{Node: 2, Bcc: 40},
+					entitys.StakePack{Node: 5, Bcc: 300},
+				}
+				bunny.StakeConsumeRsp = stakePacks
+				distributionMap, total := impl.distributionOfStake(100)
+				callExpector[float64](600, total, t, prefixOld, "total sum of bcc")
+				for i, pack := range stakePacks {
+					callExpector[float64](pack.Bcc, distributionMap[workers[pack.Node]], t, prefixOld, fmt.Sprintf("Test distribution of pack %d", i))
+				}
+				callExpector[int](6, bunny.CallConsumeStake, t, prefixOld, "call comsume 6 times")
+				callExpector[int](1, bunny.CallPublishStake, t, prefixOld, "call publish stake")
+				callExpector(RabbitMqService.PuslishStakeParam{StakePack: stakePacks[2], Dst: queueAndExchange}, bunny.CallPublishStakeWith[0], t, prefixOld, "tset puclidh argument")
+				for i := 0; i < 6; i++ {
+					callExpector(queueAndExchange, bunny.CallConsumeStakeWith[i], t, prefixOld, fmt.Sprintf("Tast argument  fo consume at index %d", i))
+
+				}
+
+				fmt.Printf("%s  it  should  create a  distribution map \n", prefixOld)
+			}
+			itShouldCreateADistibutionMap(prefixNew)
+
+		}
+		TestDistribution := func(prefixOld string) {
+
+			fmt.Printf("%s  Test Cases for  DistributionMap stakev3\n", prefixOld)
+			prefixNew := fmt.Sprintf("%s%s", prefixOld, prefix)
+			workers, err := keyGen(6)
+			expectorNoErr(t, err, prefixOld)
+			itShouldCreateADistibutionMap := func(prefixOld string) {
+				//create service
+				bunny := &RabbitMqService.MockRabbitMqImpl{}
+				logger := &Logger.MockLogger{}
+				queueAndExchange := RabbitMqService.QueueAndExchange{Queue: "Queue", Exchange: "Topic"}
+				impl := StakeBCCv3struct{Workers: workers, HashCurrent: "A hash", Who: 3, QueueAndExchange: queueAndExchange, Providers: StakeProviders2{LoggerService: logger, RabbitMq: bunny}}
+				err := impl.Construct()
+				expectorNoErr(t, err, prefixOld)
+				callExpector[bool](true, impl.vld, t, prefixOld, "service should be valid ")
+				callExpector[int](6, impl.totalWorkers, t, prefixOld, "total workers ")
+
+				stakePacks := []entitys.StakePack{
+					entitys.StakePack{Node: 1, Bcc: 150},
+					entitys.StakePack{Node: 0, Bcc: 0},
+					entitys.StakePack{Node: 3, Bcc: 100},
+					entitys.StakePack{Node: 4, Bcc: 50},
+					entitys.StakePack{Node: 2, Bcc: 80},
+					entitys.StakePack{Node: 5, Bcc: 300},
+				}
+				bunny.StakeConsumeRsp = stakePacks
+				distributionMap, total := impl.MapOfDistibutesRoundUp(100)
+				callExpector[int](99996, total, t, prefixOld, "total sum of bcc")
+
+				callExpector[int](22058, distributionMap[workers[stakePacks[0].Node]], t, prefixOld, "Test distribution of pack 0 22.058%")
+				callExpector[int](0, distributionMap[workers[stakePacks[1].Node]], t, prefixOld, "Test distribution of pack 1 0%")
+				callExpector[int](14705, distributionMap[workers[stakePacks[2].Node]], t, prefixOld, "Test distribution of pack 2 11.67%")
+				callExpector[int](7352, distributionMap[workers[stakePacks[3].Node]], t, prefixOld, "Test distribution of pack 3 7.352%")
+				callExpector[int](11764, distributionMap[workers[stakePacks[4].Node]], t, prefixOld, "Test distribution of pack 4 11.764%")
+				callExpector[int](44117, distributionMap[workers[stakePacks[5].Node]], t, prefixOld, "Test distribution of pack 5 44.117%")
+				callExpector[int](6, bunny.CallConsumeStake, t, prefixOld, "call comsume 6 times")
+				callExpector[int](1, bunny.CallPublishStake, t, prefixOld, "call publish stake")
+				callExpector(RabbitMqService.PuslishStakeParam{StakePack: stakePacks[2], Dst: queueAndExchange}, bunny.CallPublishStakeWith[0], t, prefixOld, "tset puclidh argument")
+				for i := 0; i < 6; i++ {
+					callExpector(queueAndExchange, bunny.CallConsumeStakeWith[i], t, prefixOld, fmt.Sprintf("Tast argument  fo consume at index %d", i))
+
+				}
+
+				fmt.Printf("%s  it  should  create a  distribution map \n", prefixOld)
+			}
+			itShouldCreateADistibutionMap(prefixNew)
+		}
+		TestCreateService(prefixNew)
+		TestCaseFordistributionMap(prefixNew)
+		TestDistribution(prefixNew)
+	}
 	TestForStakeMsg(prefix)
 	TestForStakeCoins(prefix)
+	TestForStakev3Struct(prefix)
 }

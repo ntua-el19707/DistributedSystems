@@ -165,7 +165,7 @@ func (s *SystemInfoImpl) AddWorker(body entitys.ClientRequestBody) error {
 		return errors.New(errMsg)
 	}
 	s.Workers[s.index] = body.PublicKey
-	nodeDetails := entitys.ClientInfo{Id: body.Client.Id, IndexId: s.index, Uri: body.Client.Uri}
+	nodeDetails := entitys.ClientInfo{Id: body.Client.Id, IndexId: s.index, Uri: body.Client.Uri, UriPublic: body.Client.UriPublic}
 	publicKey := s.Workers[s.index]
 	key := getHash(publicKey)
 

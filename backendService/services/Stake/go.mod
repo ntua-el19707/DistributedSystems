@@ -14,6 +14,16 @@ replace Hasher v0.0.0 => ../Hash
 
 require Hasher v0.0.0
 
+replace RabbitMqService v0.0.0 => ../RabbitMqService
+
+require RabbitMqService v0.0.0
+
+replace MessageSystem v0.0.0 => ../../MessageSystem
+
+require MessageSystem v0.0.0
+
 replace entitys v0.0.0 => ../../entitys
 
 require entitys v0.0.0
+
+require github.com/rabbitmq/amqp091-go v1.9.0 // indirect

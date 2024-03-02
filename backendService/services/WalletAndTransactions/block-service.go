@@ -429,7 +429,8 @@ func (service *BlockChainMsgImpl) InsertTransaction(t entitys.TransactionMessage
 	//if  full -Mine
 	lastBlock := service.Chain[len(service.Chain)-1]
 	validator := lastBlock.BlockEntity.Validator
-	if lastBlock.BlockEntity.Capicity == len(lastBlock.Transactions) {
+	//if lastBlock.BlockEntity.Capicity == len(lastBlock.Transactions) {
+	if lastBlock.BlockEntity.Capicity == service.index {
 		// -- MINE --
 		logger.Log("Start Mine")
 		stake := Stake.StakeMesageBlockChain{
@@ -480,7 +481,9 @@ func (service *BlockChainMsgImpl) InsertTransaction(t entitys.TransactionMessage
 		logger.Log("Commit Mine")
 
 	}
-	service.Chain.InsertTransactions(trMsg.Transaction)
+	//service.Chain.InsertTransactions(trMsg.Transaction)
+	service.Chain.InsertATransactions(service.index, trMsg.Transaction)
+	service.index++
 
 	if EqualPublicKeys(&processPublicKey, &sender) {
 		//stamp to who go the money

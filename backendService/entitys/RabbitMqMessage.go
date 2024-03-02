@@ -6,6 +6,10 @@ type TransactionCoinSet struct {
 	Tax      TransactionCoinEntityRoot `json:"tax"`
 	Transfer TransactionCoinEntityRoot `json:"transfer"`
 }
+type StakePack struct {
+	Node int     `json:"Id"` //? why not rsa.Key &=>  if pk need  to change  impl  for spin and stakecoisn and  satakemsg map[rsa.pucikey] => map[string] hash key
+	Bcc  float64 `json:"Bcc"`
+}
 
 type TransactionMessageSet struct {
 	TransactionCoin    TransactionCoinSet       `json:"transaction_money"`

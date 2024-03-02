@@ -2,6 +2,7 @@ package Stake
 
 import (
 	"Logger"
+	"RabbitMqService"
 	"Service"
 	"crypto/rsa"
 	"entitys"
@@ -334,6 +335,127 @@ func (service *StakeMesageBlockChain) GetCurrentHash() string {
 func (service StakeMesageBlockChain) GetWorkers() []rsa.PublicKey {
 	//*  VERY IMPORTANT Law : all  nodes must have the same  order in service worker and same  list
 	return service.Workers //  return  workers
+}
+
+type StakeProviders2 struct {
+	LoggerService Logger.LoggerService
+	RabbitMq      RabbitMqService.RabbitMqService
+}
+
+const errCouldNotFindProvider string = "could  not find  provider '%s'"
+const errCurrentHashShouldBeGiven string = "should  give  give the current hash 'Spin Requirment'"
+const errNotHaveQueueAndTopic string = "do not  have  queue  or a exchange topic"
+
+func (providers *StakeProviders2) Construct() error {
+	if providers.LoggerService == nil {
+		providers.LoggerService = &Logger.Logger{ServiceName: "stake  service v3"}
+		err := providers.LoggerService.Construct()
+		if err != nil {
+			return err
+		}
+	}
+	if providers.RabbitMq == nil {
+		errMsg := fmt.Sprintf(errCouldNotFindProvider, "RabbitMqService")
+		return errors.New(errMsg)
+	}
+	return nil
+}
+
+type StakeBCCv3struct struct {
+	Workers          []rsa.PublicKey
+	Providers        StakeProviders2
+	HashCurrent      string
+	Who              int
+	QueueAndExchange RabbitMqService.QueueAndExchange
+	totalWorkers     int
+	vld              bool
+}
+
+func (service *StakeBCCv3struct) Construct() error {
+	err := service.Providers.Construct()
+	if err != nil {
+		return err
+	}
+	if service.HashCurrent == "" {
+		return errors.New(errCurrentHashShouldBeGiven)
+	}
+	if service.QueueAndExchange.Queue == "" || service.QueueAndExchange.Exchange == "" {
+		return errors.New(errNotHaveQueueAndTopic)
+	}
+	service.totalWorkers = len(service.Workers)
+	service.vld = true
+	service.Providers.LoggerService.Log("Service  created")
+	return nil
+}
+func (service *StakeBCCv3struct) distributionOfStake(Bcc float64) (map[rsa.PublicKey]float64, float64) {
+
+	if !service.vld {
+		return nil, 0
+	}
+	logger := service.Providers.LoggerService
+	logger.Log("Start distribution of  StakeV3 'BCC'")
+	pack := entitys.StakePack{Node: service.Who, Bcc: Bcc}
+
+	// -- BROADCAST --
+	logger.Log("Start BroadCast Stake")
+	err := service.Providers.RabbitMq.PublishStake(pack, service.QueueAndExchange)
+	if err != nil {
+		suicideNode := fmt.Sprintf("Fatal error due to %s", err.Error())
+		logger.Fatal(suicideNode)
+	}
+	logger.Log("Commit BroadCast Stake")
+	distributionMap := make(map[rsa.PublicKey]float64)
+	sum := float64(0)
+	logger.Log(fmt.Sprintf("Start Consuming Message waiting for a total  %d message", service.totalWorkers))
+	// -- Consume Stake --
+	for i := 0; i < service.totalWorkers; i++ {
+		logger.Log(fmt.Sprintf("Start Consuming Message waiting for %d message", i))
+		recieved := service.Providers.RabbitMq.ConsumeStake(service.QueueAndExchange)
+		if recieved.Node >= service.totalWorkers {
+			suicideNode := fmt.Sprintf("Fatal error due to recieved  node %d  but have total nodes %d", recieved.Node, service.totalWorkers)
+			logger.Fatal(suicideNode)
+		}
+		sum += recieved.Bcc
+		distributionMap[service.Workers[recieved.Node]] = recieved.Bcc
+		logger.Log(fmt.Sprintf("Commit Consuming Message waiting for %d message", i))
+	}
+	logger.Log(fmt.Sprintf("Commit Consuming Message waiting for a total %d message", service.totalWorkers))
+
+	logger.Log("Commit distribution of  StakeV3 'BCC'")
+	return distributionMap, sum
+}
+
+/*
+*
+
+	MapOfDistibutesRoundUp() -- create  Weight  ineteger  for distribution map      @Service stakeService   @Implementation  StakeBCCv3struct
+	@Param   scaleFactor  float64
+	@Return  map[rsa.PublicKey] float64 , float64
+*/
+func (service *StakeBCCv3struct) MapOfDistibutesRoundUp(scaleFactor float64) (map[rsa.PublicKey]int, int) {
+	if !service.vld {
+		return nil, 0
+	}
+	logger := service.Providers.LoggerService
+	logger.Log("Start MapOfDistibutesRoundUp ")
+
+	amounts, total := service.distributionOfStake(scaleFactor)
+	roundedMap := make(map[rsa.PublicKey]int)
+	sum := 0
+	for key, amount := range amounts {
+		roundedMap[key] = int((amount / total) * 100000)
+		sum += roundedMap[key]
+	}
+	//? why  1000 intead of 100
+	//&  increase  accuracy  of  % etc  0.4832 with 100 =>  48% , 1000 => 48.3% , => 10000 => 48.32%
+	logger.Log("Commit MapOfDistibutesRoundUp ")
+	return roundedMap, sum
+}
+func (service *StakeBCCv3struct) GetCurrentHash() string {
+	return service.HashCurrent
+}
+func (service *StakeBCCv3struct) GetWorkers() []rsa.PublicKey {
+	return service.Workers
 }
 
 type MockStake struct {
