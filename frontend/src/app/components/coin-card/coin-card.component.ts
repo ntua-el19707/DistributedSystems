@@ -1,7 +1,7 @@
 import { Component, Input } from '@angular/core';
 import { MatButtonModule } from '@angular/material/button';
 import { MatCardModule } from '@angular/material/card';
-import { nodeDetails, nodeInfoRsp } from '../../sharable';
+import { NodeInfoSelfGraphQL, nodeDetails, nodeInfoRsp } from '../../sharable';
 import { NodeInfoModule } from '../../features/node-info/node-info.module';
 import { NodeInfoBehaviorService } from '../../features/node-info/node-info-behavior.service';
 import { BehaviorSubject } from 'rxjs';
@@ -20,7 +20,7 @@ const common = [CommonModule , AsyncPipe]
   styleUrl: './coin-card.component.scss'
 })
 export class CoinCardComponent {
-  readonly dataSource$ :BehaviorSubject<nodeDetails>
+  readonly dataSource$ :BehaviorSubject<NodeInfoSelfGraphQL>
   readonly coins$:BehaviorSubject<number>
   constructor(private nodeInfoBehaviorService :NodeInfoBehaviorService , private transactionBehaviorService:TransactionBehaviorService) {
     this.dataSource$ = this.nodeInfoBehaviorService.getNodeInfo()

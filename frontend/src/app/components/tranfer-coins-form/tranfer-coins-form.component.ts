@@ -1,6 +1,6 @@
 import { Component, Input } from '@angular/core';
 import { FormControl, FormGroup, FormsModule, ReactiveFormsModule, Validators } from '@angular/forms';
-import { nodeDetails } from '../../sharable';
+import { NodeInfoGraphQL, nodeDetails } from '../../sharable';
 import { MatInputModule } from '@angular/material/input';
 import { MatSelectModule } from '@angular/material/select';
 import { MatFormFieldModule } from '@angular/material/form-field';
@@ -27,7 +27,7 @@ const forms = [ FormsModule, ReactiveFormsModule,]
 export class TranferCoinsFormComponent {
 happening$:BehaviorSubject< boolean>  = new BehaviorSubject<boolean>(false)
   TransferForm: FormGroup<transactionCoinsForm> = new FormGroup<transactionCoinsForm>({To:new FormControl<nodeDetails | null>(null,Validators.required ) ,  Coins:new FormControl<string | null>(null,[Validators.required,Validators.pattern(/^[0-9]+(\.[0-9]+)?$/)])})
-  @Input()clients: nodeDetails[] = []
+  @Input()clients:NodeInfoGraphQL[] = []
     constructor(private  transactionClientService:TransactionClientService , public dialog: MatDialog){}
 submit(){
     const isHappening = this.happening$.getValue()
@@ -38,7 +38,8 @@ submit(){
     const target = this.TransferForm.controls.To.value?.indexId 
 
     const coins = this.TransferForm.controls.Coins.value 
-       if (target && coins) {
+    console.log(target , coins)
+       if (target !== undefined  && coins!== null) {
 
         this.transactionClientService.postTransaction(target , parseFloat(coins) ,this.happening$)
      
@@ -53,6 +54,6 @@ submit(){
 
 
 interface  transactionCoinsForm {
-  To: FormControl<nodeDetails |null> 
+  To: FormControl<NodeInfoGraphQL |null> 
   Coins: FormControl<string| null >
 }

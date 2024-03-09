@@ -3,7 +3,7 @@ import { ClientsModule } from '../../features/clients/clients.module';
 import { AsyncPipe, CommonModule } from '@angular/common';
 import { SendMessageFormComponent } from '../../components/send-message-form/send-message-form.component';
 import { BehaviorSubject } from 'rxjs';
-import { nodeDetails } from '../../sharable';
+import { NodeInfoGraphQL, nodeDetails, nodeInfoRsp } from '../../sharable';
 import { ClientsBehaviorSubjectService } from '../../features/clients/clients-behavior-subject.service';
 
 @Component({
@@ -14,7 +14,7 @@ import { ClientsBehaviorSubjectService } from '../../features/clients/clients-be
   styleUrl: './send-message-form-page.component.scss'
 })
 export class SendMessageFormPageComponent {
-readonly dataSource$:BehaviorSubject<Array<nodeDetails>>
+readonly dataSource$:BehaviorSubject<Array<NodeInfoGraphQL>>
 constructor(private clientsBehaviorSubjectService:ClientsBehaviorSubjectService){
     this.clientsBehaviorSubjectService.fetchClients()
   this.dataSource$ = this.clientsBehaviorSubjectService.getBehavior()

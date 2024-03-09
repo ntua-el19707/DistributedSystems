@@ -10,15 +10,24 @@ export class FilterTransactionCoinToaBehavirSubjectService {
 
   constructor() { }
   next(subject :BehaviorSubject<filterTranctionCoinSubject> , obj :  FormGroup<TransactionCoinFilterForm>){
-  if (obj.valid){
+  console.log(obj)
+    if (obj.valid){
     let filter:filterTranctionCoinSubject ={ }
-    if (obj.controls.to.value !== null) {
-      filter.To =  obj.controls.to.value.indexId 
+    if (obj.controls.to.value !== null  && obj.controls.to.value !== undefined) {
+       if (obj.controls.to.value.indexId !== undefined)
+         
+         filter.To = obj.controls.to.value.indexId; 
     }
-    if (obj.controls.from.value !== null) {
-      filter.From =  obj.controls.from.value.indexId 
+    if (
+      obj.controls.from.value !== null &&
+      obj.controls.from.value !== undefined
+    ) {
+      if (obj.controls.from.value.indexId !== undefined)
+ 
+        filter.From = obj.controls.from.value.indexId;
     }
     if (obj.controls.reason.value !== null ){
+    
       filter.Reason = obj.controls.reason.value
     }
         if (obj.controls.coinsMax.value !== null) {

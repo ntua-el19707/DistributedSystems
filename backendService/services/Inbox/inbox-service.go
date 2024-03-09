@@ -25,7 +25,11 @@ type Inbox []InboxRecord
 // --  Map =>  TrnsactionMsg =>  InboxRecord
 func (inbox *Inbox) Map(t []entitys.TransactionMsg, SystemInfoService SystemInfo.SystemInfoService) {
 	*inbox = make([]InboxRecord, len(t))
+	var zeroTransaction entitys.TransactionMsg
 	for i, transaction := range t {
+		if transaction == zeroTransaction {
+			break
+		}
 		billDetails := transaction.BillDetails
 		nodeFrom, _ := SystemInfoService.NodeDetails(billDetails.Bill.From.Address)
 		nodeTo, _ := SystemInfoService.NodeDetails(billDetails.Bill.To.Address)
@@ -43,6 +47,49 @@ func (inbox Inbox) Less(i, j int) bool {
 }
 func (inbox Inbox) Swap(i, j int) {
 	inbox[i], inbox[j] = inbox[j], inbox[i]
+}
+
+type BlockDto struct {
+	Index       int    `json:"index"`
+	CreatedAt   int64  `json:"created_at"`
+	Validator   int    `json:"validator"`
+	Capicity    int    `json:"capacity"`
+	CurrentHash string `json:"current_hash"`
+	ParentHash  string `json:"parrent_hash"`
+}
+
+func (b *BlockDto) Map(block entitys.Block, SystemInfoService SystemInfo.SystemInfoService) {
+	nodeValidator, _ := SystemInfoService.NodeDetails(block.Validator)
+	b.Index = block.Index
+	b.CreatedAt = block.CreatedAt
+	b.Validator = nodeValidator.IndexId
+	b.Capicity = block.Capicity
+	b.CurrentHash = block.CurrentHash
+	b.ParentHash = block.ParentHash
+
+}
+
+type BlockMsgDto struct {
+	Block        BlockDto `json:"block"`
+	Transactions Inbox    `json:"transactions"`
+}
+
+func (b *BlockMsgDto) Map(block entitys.BlockMessage, SystemInfoService SystemInfo.SystemInfoService) {
+	b.Block.Map(block.BlockEntity, SystemInfoService)
+	var transactions Inbox
+	transactions.Map(block.Transactions, SystemInfoService)
+	b.Transactions = transactions
+
+}
+
+type ChainMsgDTO []BlockMsgDto
+
+func (c *ChainMsgDTO) Map(chain entitys.BlockChainMessage, SystemInfoService SystemInfo.SystemInfoService) {
+	size := len(chain)
+	*c = make([]BlockMsgDto, size)
+	for i := 0; i < size; i++ {
+		(*c)[i].Map(chain[i], SystemInfoService)
+	}
 }
 
 type InboxProviders struct {
@@ -86,6 +133,7 @@ type InboxService interface {
 	All(times []int64) (error, Inbox)
 	Receive(keys []rsa.PublicKey, times []int64) (error, Inbox)
 	SendAndReceived(keys []rsa.PublicKey, times []int64) (error, Inbox)
+	GetBlockChain() (ChainMsgDTO, error)
 }
 
 type InboxImpl struct {
@@ -94,6 +142,15 @@ type InboxImpl struct {
 
 func (service *InboxImpl) Construct() error {
 	return service.Providers.Construct()
+}
+func (service *InboxImpl) GetBlockChain() (ChainMsgDTO, error) {
+	err := service.Providers.valid()
+	if err != nil {
+		return nil, err
+	}
+	var chain ChainMsgDTO
+	chain.Map(service.Providers.BlockChainService.RetriveChain(), service.Providers.SystemInfoService)
+	return chain, nil
 }
 func (service *InboxImpl) All(times []int64) (error, Inbox) {
 	err := service.Providers.valid()

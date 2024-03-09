@@ -11,7 +11,7 @@ import { map, shareReplay } from 'rxjs/operators';
 import { RouterOutlet } from '@angular/router';
 import { ClientsModule } from '../../features/clients/clients.module';
 import { ClientsBehaviorSubjectService } from '../../features/clients/clients-behavior-subject.service';
-import {  nodeDetails } from '../../sharable';
+import {  NodeInfoGraphQL } from '../../sharable';
 
 import {MatExpansionModule} from '@angular/material/expansion';
 const custom = [ClientsModule]
@@ -30,7 +30,7 @@ const material = [MatExpansionModule, MatIconModule , MatButtonModule , MatToolb
   ],
 })
 export class NavBarComponent {
-  readonly dataSource$:BehaviorSubject<Array<nodeDetails>>
+  readonly dataSource$:BehaviorSubject<Array<NodeInfoGraphQL>>
   private breakpointObserver = inject(BreakpointObserver);
 constructor(private clientsBehaviorSubjectService:ClientsBehaviorSubjectService){
   this.clientsBehaviorSubjectService.fetchClients()
@@ -42,7 +42,8 @@ this.dataSource$ = this.clientsBehaviorSubjectService.getBehavior()
       map((result) => result.matches),
       shareReplay()
     );
-    openInNewTab(link :string){
-        window.open(link, '_blank');
+    openInNewTab(link :string | undefined){
+      if(link){
+        window.open(link, '_blank');}
     }
 }

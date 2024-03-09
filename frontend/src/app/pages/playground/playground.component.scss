@@ -1,0 +1,26 @@
+.container {
+    display: flex;
+}
+
+$widthMin:300px ;
+$widthMaz:50% ;
+$heightMin:600px ; 
+$heightMax: 800px ; 
+
+app-graphql-form,
+app-graphql-rsp {
+    flex: 1;
+    /* Distributes available space equally between the components */
+    margin: 10px;
+    /* Adjust margin as needed */
+    min-width: $widthMin;
+    /* Set minimum width for each component */
+    max-width: $widthMaz;
+    /* Set maximum width for each component */
+    min-height: $heightMin;
+    /* Set minimum height for each component */
+    max-height: $heightMax;
+    /* Set maximum height for each component */
+    overflow: auto;
+    /* Enable scrolling if content overflows */
+}

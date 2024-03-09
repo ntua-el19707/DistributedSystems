@@ -1,0 +1,130 @@
+// Self
+{
+    self{
+        client{
+            nodeId,
+            indexId,
+            uri , 
+            uriPublic, 
+        } , 
+        total
+    }
+}
+{
+
+    clients{
+            nodeId,
+            indexId,
+            uri , 
+            uriPublic, 
+    }
+    
+}
+{
+    allNodes{ 
+        nodeId,
+            indexId,
+            uri , 
+            uriPublic, }
+            }
+{
+    getTransactionsCoins{
+        Transactions{
+            From , 
+            To ,
+            Coins , 
+            Reason , 
+            Time , 
+            TransactionId
+        }
+    }
+}
+{
+    inbox{
+        transactions{
+              From , 
+            To ,
+            Msg , 
+      
+            Time , 
+            TransactionId
+        }
+    }
+}
+        
+{
+    inbox(From:1 ){
+        transactions{
+              From , 
+            To ,
+            Msg , 
+      
+            Time , 
+            TransactionId
+        }
+    }
+}
+{
+    inbox(From:1 ,TimeBefore:1709581659 ){
+        transactions{
+              From , 
+            To ,
+            Msg , 
+      
+            Time , 
+            TransactionId
+        }
+    }
+}
+{
+    send(to:1  ){
+        transactions{
+              From , 
+            To ,
+            Msg , 
+      
+            Time , 
+            TransactionId
+        }
+    }
+}
+{
+	blockChainCoins{
+                         block{
+                        index , 
+                        validator , 
+			            created_at , 
+                        current_hash , 
+			             parrent_hash ,
+                         capacity
+                }
+                transactions{
+                      From , 
+                      To ,   
+                      Coins,
+                      Reason,
+			          Time , 
+			          TransactionId , 
+			          Nonce
+                }
+	}
+}
+{
+        blockChainMsg{
+                block{
+                        index , 
+                        validator , 
+			            created_at , 
+                        current_hash , 
+			             parrent_hash ,capacity
+                }
+                transactions{
+                      From , 
+                      To ,   
+                      Msg ,
+			          Time , 
+			          TransactionId , 
+			          Nonce
+                }
+        }
+}

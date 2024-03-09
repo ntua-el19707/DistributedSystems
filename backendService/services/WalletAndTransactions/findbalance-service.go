@@ -24,7 +24,11 @@ type TransactionListCoin []TransactionCoinRow
 func (transactions *TransactionListCoin) Map(t []entitys.TransactionCoins, SystemInfoService SystemInfo.SystemInfoService) {
 	*transactions = make(TransactionListCoin, len(t))
 	var zero rsa.PublicKey
+	var zeroTransaction entitys.TransactionCoins
 	for i, transaction := range t {
+		if zeroTransaction == transaction {
+			break
+		}
 		billDetails := transaction.BillDetails
 		from := billDetails.Bill.From.Address
 		var nodeFrom entitys.ClientInfo
@@ -73,6 +77,7 @@ type BalanceService interface {
 	FindBalance(sender rsa.PublicKey) float64
 	findAndLock(amount float64) (float64, error)
 	GetTransactions(keys []rsa.PublicKey, times []int64) TransactionListCoin
+	GetChain() ChainCoinDTO
 }
 
 type BalanceImplementation struct {
@@ -112,6 +117,55 @@ func (balance *BalanceImplementation) GetTransactions(keys []rsa.PublicKey, time
 	var list TransactionListCoin
 	list.Map(balance.BlockChainService.GetTransactions(false, true, keys, times), balance.SystemInfoService)
 	list.Sort()
+	return list
+
+}
+
+type BlockDto struct {
+	Index       int    `json:"index"`
+	CreatedAt   int64  `json:"created_at"`
+	Validator   int    `json:"validator"`
+	Capicity    int    `json:"capacity"`
+	CurrentHash string `json:"current_hash"`
+	ParentHash  string `json:"parrent_hash"`
+}
+
+func (b *BlockDto) Map(block entitys.Block, SystemInfoService SystemInfo.SystemInfoService) {
+	nodeValidator, _ := SystemInfoService.NodeDetails(block.Validator)
+	b.Index = block.Index
+	b.CreatedAt = block.CreatedAt
+	b.Validator = nodeValidator.IndexId
+	b.Capicity = block.Capicity
+	b.CurrentHash = block.CurrentHash
+	b.ParentHash = block.ParentHash
+
+}
+
+type BlockCoinDto struct {
+	Block        BlockDto            `json:"block"`
+	Transactions TransactionListCoin `json:"transactions"`
+}
+
+func (b *BlockCoinDto) Map(block entitys.BlockCoinEntity, SystemInfoService SystemInfo.SystemInfoService) {
+	b.Block.Map(block.BlockEntity, SystemInfoService)
+	var transactions TransactionListCoin
+	transactions.Map(block.Transactions, SystemInfoService)
+	b.Transactions = transactions
+
+}
+
+type ChainCoinDTO []BlockCoinDto
+
+func (c *ChainCoinDTO) Map(chain entitys.BlockChainCoins, SystemInfoService SystemInfo.SystemInfoService) {
+	size := len(chain)
+	*c = make([]BlockCoinDto, size)
+	for i := 0; i < size; i++ {
+		(*c)[i].Map(chain[i], SystemInfoService)
+	}
+}
+func (balance *BalanceImplementation) GetChain() ChainCoinDTO {
+	var list ChainCoinDTO
+	list.Map(balance.BlockChainService.RetriveChain(), balance.SystemInfoService)
 	return list
 
 }

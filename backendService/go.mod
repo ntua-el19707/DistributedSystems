@@ -2,6 +2,34 @@ module github.com/ntua-el19707/DistributedSystems/backendService
 
 go 1.21.3
 
+replace graphQL v0.0.0 => ./graphQL
+
+require graphQL v0.0.0
+
+replace balanceResolver v0.0.0 => ./graphQL/balanceResolver
+
+require balanceResolver v0.0.0
+
+replace blockChainMsgResolver v0.0.0 => ./graphQL/blockChainMsgResolver
+
+require blockChainMsgResolver v0.0.0
+
+replace BlockCoinChainResolver v0.0.0 => ./graphQL/BlockCoinChainResolver
+
+require BlockCoinChainResolver v0.0.0
+
+replace TransactionCoinsResolver v0.0.0 => ./graphQL/transactionsCoinsResolver
+
+require TransactionCoinsResolver v0.0.0
+
+replace TransactionMsgResolver v0.0.0 => ./graphQL/TransactionMsgResolver
+
+require TransactionMsgResolver v0.0.0
+
+replace NodeDetails v0.0.0 => ./graphQL/NodeDeatails
+
+require NodeDetails v0.0.0
+
 replace Inbox v0.0.0 => ./services/Inbox
 
 require Inbox v0.0.0
@@ -31,6 +59,7 @@ replace entitys v0.0.0 => ./entitys
 require entitys v0.0.0
 
 require (
+	github.com/graphql-go/graphql v0.8.1 // indirect
 	github.com/joho/godotenv v1.5.1 // indirect
 	github.com/rabbitmq/amqp091-go v1.9.0 // indirect
 )
@@ -54,10 +83,6 @@ require Hasher v0.0.0
 replace Generator v0.0.0 => ./services/Generator
 
 require Generator v0.0.0
-
-replace FindBalance v0.0.0 => ./services/FindBalance
-
-require FindBalance v0.0.0
 
 replace RabbitMqService v0.0.0 => ./services/RabbitMqService
 

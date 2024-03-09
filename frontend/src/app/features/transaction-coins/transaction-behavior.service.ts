@@ -1,93 +1,206 @@
 import { Injectable } from '@angular/core';
 import { TransactionCoinsModule } from './transaction-coins.module';
-import { HttpClient } from '@angular/common/http';
-import { BehaviorSubject, map} from 'rxjs';
-import { BalanceRsp, transactionCoinResponse } from '../../sharable';
+
+import { BehaviorSubject, Observable, map } from 'rxjs';
+import {
+  BalanceRsp,
+  GraphQLResponse,
+  TransactionCoinsAndNodeDetails,
+  TransactionCoinsRowGraphQL,
+} from '../../sharable';
 import { TransactionClientService } from './transaction-client.service';
 import { filterTranctionCoinSubject } from '../filter-transaction-coin-toa-behavir-subject.service';
+import { AllNodesBehaviorSubjectService } from '../allNodes/all-nodes-behavior-subject.service';
 
 @Injectable({
-  providedIn: TransactionCoinsModule
+  providedIn: TransactionCoinsModule,
 })
 export class TransactionBehaviorService {
-  #balanceBehaviorSubject : BehaviorSubject<number> = new BehaviorSubject<number>(0.0)
-  #myTransactionsBehaviorSubject:BehaviorSubject<transactionCoinResponse> = new BehaviorSubject<transactionCoinResponse>({nodeDetails:{indexId:0 , nodeId:"" , uri:"" ,uriPublic:""},transactions:[]})
-  #myTransactionsfilterBehaviorSubject:BehaviorSubject<transactionCoinResponse> = new BehaviorSubject<transactionCoinResponse>({nodeDetails:{indexId:0 , nodeId:"" , uri:"",uriPublic:""},transactions:[]})
- 
-   #allTransactionsBehaviorSubject:BehaviorSubject<transactionCoinResponse> = new BehaviorSubject<transactionCoinResponse>({nodeDetails:{indexId:0 , nodeId:"" , uri:"",uriPublic:""},transactions:[]})
-  #allTransactionsfilterBehaviorSubject:BehaviorSubject<transactionCoinResponse> = new BehaviorSubject<transactionCoinResponse>({nodeDetails:{indexId:0 , nodeId:"" , uri:"",uriPublic:""},transactions:[]})
- 
-  constructor(private transactionClientService:TransactionClientService){  }
-  fetchBalance(){
-this.transactionClientService.getBalance().subscribe((r:BalanceRsp)=>{
-  console.log(r)    
-  this.#balanceBehaviorSubject.next(r.availableBalance)
-    } ,err=>{} , ()=>{})
-  }
-  getBalanceSubject():BehaviorSubject<number>{
-    return this.#balanceBehaviorSubject
+  #balanceBehaviorSubject: BehaviorSubject<number> =
+    new BehaviorSubject<number>(0.0);
+  #myTransactionsBehaviorSubject: BehaviorSubject<TransactionCoinsAndNodeDetails> =
+    new BehaviorSubject<TransactionCoinsAndNodeDetails>({
+      transactions: [],
+      nodeDetails: { indexId: -1, nodeId: '', uri: '', uriPublic: '' },
+    });
+  #myTransactionsfilterBehaviorSubject: BehaviorSubject<TransactionCoinsAndNodeDetails> =
+    new BehaviorSubject<TransactionCoinsAndNodeDetails>({
+      transactions: [],
+      nodeDetails: { indexId: -1, nodeId: '', uri: '', uriPublic: '' },
+    });
+
+  #allTransactionsBehaviorSubject: BehaviorSubject<TransactionCoinsAndNodeDetails> =
+    new BehaviorSubject<TransactionCoinsAndNodeDetails>({
+      transactions: [],
+      nodeDetails: { indexId: -1, nodeId: '', uri: '', uriPublic: '' },
+    });
+  #allTransactionsfilterBehaviorSubject: BehaviorSubject<TransactionCoinsAndNodeDetails> =
+    new BehaviorSubject<TransactionCoinsAndNodeDetails>({
+      transactions: [],
+      nodeDetails: { indexId: -1, nodeId: '', uri: '', uriPublic: '' },
+    });
+#Filter:filterTranctionCoinSubject ={}
+  constructor(
+    private transactionClientService: TransactionClientService,
+    private allNodesBehaviorSubjectService: AllNodesBehaviorSubjectService
+  ) {}
+  fetchBalance() {
+    this.transactionClientService.getBalance().subscribe(
+      (r: GraphQLResponse) => {
+        const b = r.data?.balance;
+        if (b) {
+          if (b.availableBalance) {
+            this.#balanceBehaviorSubject.next(b.availableBalance);
+          }
+        }
+      },
+      (err) => {},
+      () => {}
+    );
   }
 
-  fetchMyTransactions() {
-    this.transactionClientService.getMyTransactions().subscribe(r =>{
-      this.#myTransactionsBehaviorSubject.next(r)
-      this.#myTransactionsfilterBehaviorSubject.next(r)
-    } , err=>{
-      console.log(err)
-    } , ()=>{})
+  getBalanceSubject(): BehaviorSubject<number> {
+    return this.#balanceBehaviorSubject;
   }
-getMyFilterTransactions():BehaviorSubject<transactionCoinResponse> {
-    return this.#myTransactionsfilterBehaviorSubject
+
+  fetchMyTransactions(mode: boolean) {
+    this.transactionClientService.getMyTransactions(mode).subscribe(
+      (r) => {
+        const transactions = r.data?.nodeTransactions;
+        const client = r.data?.self?.client;
+        if (transactions && client) {
+          if (transactions.Transactions) {
+            this.#myTransactionsBehaviorSubject.next({
+              transactions: transactions.Transactions,
+              nodeDetails: client,
+            });
+           
+           this.filterCoins(this.#Filter)
+          }
+        }
+        const nodes = r.data?.allNodes;
+        if (nodes) {
+          this.allNodesBehaviorSubjectService.next(nodes);
+        }
+      },
+      (err) => {
+        console.log(err);
+      },
+      () => {}
+    );
   }
-  filterCoins(filter:filterTranctionCoinSubject){
-    const  observable =  this.#myTransactionsBehaviorSubject.pipe(map((response:transactionCoinResponse )=>{
-      const filteredTransactions = response.transactions.filter(transaction => {
-      return (!filter.To || transaction.To <= filter.To) &&
-            (!filter.Reason || transaction.Reason === filter.Reason)&& 
-            (!filter.From || transaction.From >= filter.From) &&
-             (!filter.CoinsMin || transaction.Coins >= filter.CoinsMin) &&
-             (!filter.CoinsMax || transaction.Coins <= filter.CoinsMax) &&
-             (!filter.SendTimeLess || transaction.SendTime >= filter.SendTimeLess) &&
-             (!filter.SendTimeMore || transaction.SendTime < filter.SendTimeMore);
-    })
-  
+  getMyFilterTransactions(): BehaviorSubject<TransactionCoinsAndNodeDetails> {
+    return this.#myTransactionsfilterBehaviorSubject;
+  }
+  filterCoins(filter: filterTranctionCoinSubject) {
+
+    const observable = this.filter(filter, this.#myTransactionsBehaviorSubject);
+
+    observable.subscribe((r: TransactionCoinsAndNodeDetails) => {
+      this.#myTransactionsfilterBehaviorSubject.next(r);
+    });
+  }
+  private filter(
+    filter: filterTranctionCoinSubject,
+    subject: BehaviorSubject<TransactionCoinsAndNodeDetails>
+  ): Observable<TransactionCoinsAndNodeDetails> {
+    console.log(filter)
+    const filterComp: (
+      row: TransactionCoinsRowGraphQL,
+      filter: filterTranctionCoinSubject
+    ) => boolean = (
+      row: TransactionCoinsRowGraphQL,
+      filter: filterTranctionCoinSubject
+    ): boolean => {
+      let defaultRsp = true;
+
+      if (row.To !== undefined) {
+        if  (filter.To !== undefined){
+        defaultRsp = defaultRsp && (row.To === filter.To);
+      }
+      }
+
+      if (row.Reason !== undefined) {
+        defaultRsp =
+          defaultRsp && (!filter.Reason || row.Reason === filter.Reason);
+      }
+
+      if (row.From !== undefined) {
+              if  (filter.From !== undefined){
+        defaultRsp = defaultRsp && ( row.From === filter.From)};
+      }
+
+      if (row.Coins !== undefined) {
+        defaultRsp =
+          defaultRsp && (!filter.CoinsMin || row.Coins >= filter.CoinsMin);
+        defaultRsp =
+          defaultRsp && (!filter.CoinsMax || row.Coins <= filter.CoinsMax);
+      }
+
+      if (row.Time !== undefined) {
+        defaultRsp =
+          defaultRsp &&
+          (!filter.SendTimeLess || row.Time >= filter.SendTimeLess);
+        defaultRsp =
+          defaultRsp &&
+          (!filter.SendTimeMore || row.Time < filter.SendTimeMore);
+      }
+
+      return defaultRsp;
+    };
+    this.#Filter  = filter
+    const observable = subject.pipe(
+      map((response: TransactionCoinsAndNodeDetails) => {
+        const filteredTransactions = response.transactions.filter(
+          (transaction) => {
+            return filterComp(transaction, filter);
+          }
+        );
+
         return { ...response, transactions: filteredTransactions };
-    }))
-    observable.subscribe((r:transactionCoinResponse)=>{
-     this.#myTransactionsfilterBehaviorSubject.next(r)
-    })
+      })
+    );
+    return observable;
   }
-  getMyTransactions():BehaviorSubject<transactionCoinResponse>{
-    return this.#myTransactionsBehaviorSubject
+
+  getMyTransactions(): BehaviorSubject<TransactionCoinsAndNodeDetails> {
+    return this.#myTransactionsBehaviorSubject;
   }
-getMyAllFilterTransactions():BehaviorSubject<transactionCoinResponse>{
-return this.#allTransactionsfilterBehaviorSubject
+  getMyAllFilterTransactions(): BehaviorSubject<TransactionCoinsAndNodeDetails> {
+    return this.#allTransactionsfilterBehaviorSubject;
+  }
+  fetchAllTransactions(mode: boolean) {
+    this.transactionClientService.getAllTransactions(mode).subscribe(
+      (r) => {
+        const transactions = r.data?.getTransactionsCoins;
+        const client = r.data?.self?.client;
+        if (transactions && client) {
+          if (transactions.Transactions) {
+            this.#allTransactionsBehaviorSubject.next({
+              transactions: transactions.Transactions,
+              nodeDetails: client,
+            });
+           this.filterAllCoins(this.#Filter)
+          }
+        }
+        const nodes = r.data?.allNodes;
+        if (nodes) {
+          this.allNodesBehaviorSubjectService.next(nodes);
+        }
+      },
+      (err) => {
+        console.log(err);
+      },
+      () => {}
+    );
+  }
+  filterAllCoins(filter: filterTranctionCoinSubject) {
+    const observable = this.filter(
+      filter,
+      this.#allTransactionsBehaviorSubject
+    );
+    observable.subscribe((r: TransactionCoinsAndNodeDetails) => {
+      this.#allTransactionsfilterBehaviorSubject.next(r);
+    });
+  }
 }
-  fetchAllTransactions() {
-    this.transactionClientService.getAllTransactions().subscribe(r =>{
-      this.#allTransactionsBehaviorSubject.next(r)
-      this.#allTransactionsfilterBehaviorSubject.next(r)
-    } , err=>{
-      console.log(err)
-    } , ()=>{})
-  }
-  filterAllCoins(filter:filterTranctionCoinSubject){
-    const  observable =  this.#allTransactionsBehaviorSubject.pipe(map((response:transactionCoinResponse )=>{
-      const filteredTransactions = response.transactions.filter(transaction => {
-      return (!filter.To || transaction.To <= filter.To) &&
-             (!filter.From || transaction.From >= filter.From) &&
-             (!filter.Reason || transaction.Reason === filter.Reason)&& 
-             (!filter.CoinsMin || transaction.Coins >= filter.CoinsMin) &&
-             (!filter.CoinsMax || transaction.Coins <= filter.CoinsMax) &&
-             (!filter.SendTimeLess || transaction.SendTime >= filter.SendTimeLess) &&
-             (!filter.SendTimeMore || transaction.SendTime < filter.SendTimeMore);
-    })
-        return { ...response, transactions: filteredTransactions };
-    }))
-    observable.subscribe((r:transactionCoinResponse)=>{
-     this.#allTransactionsfilterBehaviorSubject.next(r)
-    })
-  }
-  }
- 
-

@@ -1,7 +1,7 @@
 import { Injectable } from '@angular/core';
 import { ClientsModule } from './clients.module';
 import { ClientsClientService } from './clients-client.service';
-import { clientsInfoRsp, nodeDetails } from '../../sharable';
+import { clientsInfoRsp, nodeDetails ,NodeInfoGraphQL} from '../../sharable';
 import { BehaviorSubject } from 'rxjs';
 
 @Injectable({
@@ -9,16 +9,18 @@ import { BehaviorSubject } from 'rxjs';
 })
 export class ClientsBehaviorSubjectService {
 
-   #ClientsBehaviorSubject:BehaviorSubject<Array<nodeDetails>> = 
-   new BehaviorSubject<Array<nodeDetails>>([])
+   #ClientsBehaviorSubject:BehaviorSubject<Array<NodeInfoGraphQL>> = 
+   
+   new BehaviorSubject<Array<NodeInfoGraphQL>>([])
   constructor(private  clientsClientService:ClientsClientService) { }
   fetchClients(){
-
     this.clientsClientService.getClients().subscribe(r=>{
-      this.#ClientsBehaviorSubject.next(r.clients)
+      const data = r.data?.clients;
+      if (data){
+      this.#ClientsBehaviorSubject.next(data)}
     } , err=>{} , ()=>{})
   } 
-  getBehavior():BehaviorSubject<Array<nodeDetails>> {
+  getBehavior():BehaviorSubject<Array<NodeInfoGraphQL>> {
     return this.#ClientsBehaviorSubject
   }
 }

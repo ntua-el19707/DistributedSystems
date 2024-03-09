@@ -1,11 +1,11 @@
 <div *ngIf="dataSource$ | async as  details;">
 <mat-card class="card">
 <mat-card-header>
-    <mat-card-title>Node {{details.nodeId}}</mat-card-title>
+    <mat-card-title>Node {{details.client?.nodeId}}</mat-card-title>
     <mat-card-subtitle>
-        Index Id: {{details.indexId}}
+        Index Id: {{details.client?.indexId}}
         <span class="uri-link">
-            , Uri:<a href="{{details.uri}}"><i >{{details.uri}}</i></a>
+            , Uri:<a href="{{details.client?.uri}}"><i >{{details.client?.uri}}</i></a>
         </span>
     </mat-card-subtitle>
 </mat-card-header>

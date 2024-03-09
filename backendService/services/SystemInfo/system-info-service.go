@@ -34,6 +34,7 @@ type SystemInfoService interface {
 	NodeDetails(key rsa.PublicKey) (entitys.ClientInfo, int)
 	Who(index int) (rsa.PublicKey, error)
 	ClientList(key rsa.PublicKey) ([]entitys.ClientInfo, int)
+	Nodes() []entitys.ClientInfo
 }
 type SystemInfoProviders struct {
 	LoggerService   Logger.LoggerService
@@ -106,6 +107,14 @@ type SystemInfoImpl struct {
 	ExpectedWorkers int
 	Coordinator     bool
 	ok              bool
+}
+
+func (s *SystemInfoImpl) Nodes() []entitys.ClientInfo {
+	nodes := make([]entitys.ClientInfo, 0)
+	for _, clientinfo := range s.Clients {
+		nodes = append(nodes, clientinfo)
+	}
+	return nodes
 }
 
 /*

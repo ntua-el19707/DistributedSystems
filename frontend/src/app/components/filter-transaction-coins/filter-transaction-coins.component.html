@@ -4,9 +4,11 @@
             <mat-label>Select From Client </mat-label>
             <mat-select (selectionChange)="notify()" [formControl]=" filterForm.controls.from">
                 <mat-option>--</mat-option>
+                <div *ngIf="clients$ | async  as clients">
                 @for (nodeDetails of clients; track nodeDetails) {
                 <mat-option [value]="nodeDetails">{{nodeDetails.indexId}}</mat-option>
                 }
+                </div>
             </mat-select>
             &nbsp;
         </mat-form-field>
@@ -15,9 +17,10 @@
             <mat-label>Select To Client </mat-label>
             <mat-select (selectionChange)="notify()" [formControl]="filterForm.controls.to">
                 <mat-option>--</mat-option>
+                <div *ngIf="clients$ | async as clients">
                 @for (nodeDetails of clients; track nodeDetails) {
                 <mat-option [value]="nodeDetails">{{nodeDetails.indexId}}</mat-option>
-                }
+                }</div>
             </mat-select>
             &nbsp;
         </mat-form-field>

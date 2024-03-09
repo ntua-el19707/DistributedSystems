@@ -28,6 +28,12 @@ type RabbitMqService interface {
 
 const serviceName = "RabbitMqService"
 
+func (s *RabbitMqImpl) PublishStake(stake entitys.StakePack, Dst QueueAndExchange) error { return nil }
+func (s *RabbitMqImpl) ConsumeStake(Dsr QueueAndExchange) entitys.StakePack {
+	var zero entitys.StakePack
+	return zero
+}
+
 type QueueAndExchange struct {
 	Queue    string
 	Exchange string

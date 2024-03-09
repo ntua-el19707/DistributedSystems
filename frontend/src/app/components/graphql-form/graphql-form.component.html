@@ -1,0 +1,29 @@
+<mat-card class="custom-card">
+    <mat-card-header>
+        <div style="display: flex; align-items: center;">
+            <mat-card-title style="flex: 1;">Ask GraphQL</mat-card-title>
+            <div *ngIf="(happening$ | async) as happening">
+                @if(happening){
+                <mat-spinner style="max-width: 25px; max-height: 25px;"></mat-spinner>
+                }
+            </div>
+        </div>
+    </mat-card-header>
+    <mat-card-content class="custom-card-content">
+        <form [formGroup]="GraphQLForm" class="custom-form">
+            <mat-form-field  class="custom-form-field">
+                <mat-label>GraphQL Query</mat-label>
+                <textarea  matInput [formControl]="GraphQLForm.controls.query" 
+                    placeholder="Ex.  {self{client{indexId}}}"  appTabDirective  ></textarea>
+                @if (GraphQLForm.controls.query.hasError('required')) {
+                <mat-error>Query is <strong>required</strong></mat-error>
+                }
+            </mat-form-field>
+        </form>
+    </mat-card-content>
+    <hr class="custom-form-field">
+    <mat-card-actions class="custom-card-actions">
+        <button mat-raised-button color="primary" class="custom-form-field" (click)="submit()"
+            [disabled]="!GraphQLForm.valid">Ask</button>
+    </mat-card-actions>
+</mat-card>

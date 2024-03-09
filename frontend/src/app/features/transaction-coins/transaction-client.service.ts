@@ -1,43 +1,146 @@
 import { Injectable } from '@angular/core';
 import { TransactionCoinsModule } from './transaction-coins.module';
 import { HttpClient } from '@angular/common/http';
-import { BalanceRsp, transactionCoinRequest, transactionCoinResponse } from '../../sharable';
+import {
+  BalanceRsp,
+  GraphQLResponse,
+  transactionCoinRequest,
+} from '../../sharable';
 import { BehaviorSubject, Observable } from 'rxjs';
 import { OpenErrordialogService } from '../open-errordialog.service';
 import { NavigateService } from '../navigate.service';
+import { GraphQLClientService } from '../GraphQL/graph-qlclient.service';
 
 @Injectable({
-  providedIn: TransactionCoinsModule
+  providedIn: TransactionCoinsModule,
 })
 export class TransactionClientService {
+  constructor(
+    private http: HttpClient,
+    private graphQLClientService: GraphQLClientService,
+    private navigateService: NavigateService,
+    private openErrordialogService: OpenErrordialogService
+  ) {}
+  getBalance()
+  : Observable<GraphQLResponse> {
+    const query = `{
+  nodeTransactions {
+      Transactions{
+        From , 
+        To , 
+        Coins , 
+        Reason , 
+        Nonce  , 
+        Time , TransactionId
+      }
+  }
+   self{
+          client{  
+            nodeId,
+            indexId,
+            uri , 
+            uriPublic
+          }
+        }
+}
+`;
+    return this.graphQLClientService.query(
+      query
+    ) as Observable<GraphQLResponse>;
+  }
 
- constructor(private http:HttpClient,private  navigateService:NavigateService, private openErrordialogService:OpenErrordialogService) {
+ 
+  getMyTransactions(mode :boolean): Observable<GraphQLResponse> {
+  let query = `{
+  nodeTransactions {
+      Transactions{
+        From , 
+        To , 
+        Coins , 
+        Reason , 
+        Nonce  , 
+        Time , TransactionId
+      }
+  }
+   self{
+          client{  
+            nodeId,
+            indexId,
+            uri , 
+            uriPublic
+          }
+        }
+`;
+if (mode){
+  query += `allNodes{
+        nodeId,
+            indexId,
+            uri , 
+            uriPublic
+  }}`;
 
+}else {
+  query += "}"
+}
+    return this.graphQLClientService.query(
+      query
+    ) as Observable<GraphQLResponse>;
   }
-  getBalance():Observable<BalanceRsp>{
-    return this.http.get("/api/v1/balance") as  Observable<BalanceRsp>
+
+  getAllTransactions(mode:boolean): Observable<GraphQLResponse> {
+  let  query = `{
+  getTransactionsCoins{
+      Transactions{
+        From , 
+        To , 
+        Coins , 
+        Reason , 
+        Nonce  , 
+        Time ,TransactionId
+      }
   }
-  getMyTransactions():Observable<transactionCoinResponse>{
-    return this.http.get("/api/v1/transactions") as  Observable<transactionCoinResponse>
-  }
-  getAllTransactions():Observable<transactionCoinResponse>{
-    return this.http.get("/api/v1/transactionsAll") as  Observable<transactionCoinResponse>
-  }
-  postTransaction(to:number , coins:number ,happening$:BehaviorSubject<boolean>){
-   happening$.next(true)
-    const body:transactionCoinRequest = {
-      to:to , 
-      amount:coins
+   self{
+          client{  
+            nodeId,
+            indexId,
+            uri , 
+            uriPublic
+          }
     }
-    this.http.post("/api/v1/transfer" , body).subscribe((r)=>{
-      this.navigateService.navigateTo("/")
-
-    } ,err=>{ 
-
-      this.openErrordialogService.errorDialog(err.error.Message)
-       happening$.next(false)
-    } ,()=>{} )
-
-
+`;
+    if (mode) {
+      query += `allNodes{
+        nodeId,
+            indexId,
+            uri , 
+            uriPublic
+  }}`;
+    } else {
+      query += '}';
+    }
+    return this.graphQLClientService.query(
+      query
+    ) as Observable<GraphQLResponse>;
+  }
+  postTransaction(
+    to: number,
+    coins: number,
+    happening$: BehaviorSubject<boolean>
+  ) {
+    happening$.next(true);
+    const body: transactionCoinRequest = {
+      to: to,
+      amount: coins,
+    };
+    this.http.post('/api/v1/transfer', body).subscribe(
+      (r) => {
+        this.navigateService.navigateTo('/');
+      },
+      (err) => {
+        this.openErrordialogService.errorDialog(err.error.Message);
+        happening$.next(false);
+      },
+      () => {}
+    );
   }
 }

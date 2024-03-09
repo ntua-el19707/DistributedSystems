@@ -39,16 +39,18 @@ $font-size-medium: 0.8 * $font-size-coin;
     border-radius: 50%;
     border: 3px solid #CD8500; // Slightly darker gold border
     margin-right: 10px; // Space between the small coin and text
-align-items: center;
-    justify-content: flex-end; // Align items to the right
+    display: flex;
+    align-items: center;
+    /* Center vertically */
+    justify-content: center;
+
+    /* Center horizontally */
     span {
         font-size: $font-size-small;
         color: black;
         font-weight: bold;
-        align-items: top;
     }
 }
-
 .medium-coin {
     width: $medium-coin-size;
     height: $medium-coin-size;

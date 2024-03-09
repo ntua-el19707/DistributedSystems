@@ -12,11 +12,13 @@ export class FilterTransactionMsgToaBehavirSubjectService {
   next(subject :BehaviorSubject<FilterTransactionMsg> , obj :  FormGroup<TransactionMsgFilterForm>){
   if (obj.valid){
     let filter:FilterTransactionMsg ={ }
-    if (obj.controls.to.value !== null) {
-      filter.To =  obj.controls.to.value.indexId 
+    if (obj.controls.to.value !== null && obj.controls.to.value !== undefined) {
+      if (obj.controls.to.value.indexId !== undefined)
+        filter.To = obj.controls.to.value.indexId;
     }
-    if (obj.controls.from.value !== null) {
-      filter.From =  obj.controls.from.value.indexId 
+    if (obj.controls.from.value !== null && obj.controls.from.value !== undefined) {
+      if (obj.controls.from.value.indexId !== undefined)
+        filter.From = obj.controls.from.value.indexId;
     }
     if (obj.controls.message.value !== null ){
       filter.Message = obj.controls.message.value

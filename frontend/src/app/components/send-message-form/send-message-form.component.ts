@@ -1,7 +1,7 @@
 
 import { Component, Input } from '@angular/core';
 import { FormControl, FormGroup, FormsModule, ReactiveFormsModule, Validators } from '@angular/forms';
-import { nodeDetails } from '../../sharable';
+import { NodeInfoGraphQL, nodeDetails, nodeInfoRsp } from '../../sharable';
 import { MatInputModule } from '@angular/material/input';
 import { MatSelectModule } from '@angular/material/select';
 import { MatFormFieldModule } from '@angular/material/form-field';
@@ -26,7 +26,7 @@ export class SendMessageFormComponent {
 
 TransferForm: FormGroup<transactionMsgForm> = new FormGroup<transactionMsgForm>({To:new FormControl<nodeDetails | null>(null,Validators.required ) ,  Msg:new FormControl<string | null>("",[Validators.required])})
   
-  @Input()clients: nodeDetails[] = []
+  @Input()clients: NodeInfoGraphQL[] = []
   happening$:BehaviorSubject< boolean>  = new BehaviorSubject<boolean>(false)
   constructor(private  transactionMsgClientService:TransactionMsgClientService){}
   submit(){
@@ -39,8 +39,12 @@ TransferForm: FormGroup<transactionMsgForm> = new FormGroup<transactionMsgForm>(
     const target = this.TransferForm.controls.To.value?.indexId 
 
     const msg =  this.TransferForm.controls.Msg.value 
-    if (target && msg) {
-      this.transactionMsgClientService.postTransaction(target , msg ,this.happening$ )
+    if (target !== undefined && msg !== null) {
+      this.transactionMsgClientService.postTransaction(
+        target,
+        msg,
+        this.happening$
+      );
     }
     
   
@@ -52,6 +56,6 @@ TransferForm: FormGroup<transactionMsgForm> = new FormGroup<transactionMsgForm>(
 ``
 
 interface  transactionMsgForm {
-  To: FormControl<nodeDetails |null> 
+  To: FormControl<NodeInfoGraphQL |null> 
   Msg: FormControl<string| null >
 }

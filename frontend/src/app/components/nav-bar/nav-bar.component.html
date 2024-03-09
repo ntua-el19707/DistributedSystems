@@ -46,7 +46,30 @@
     </mat-expansion-panel-header>
     <a mat-list-item href="/#/transfer">Transfer</a>
     <a mat-list-item href="/#/sendMessage">Send</a>
+
   </mat-expansion-panel>
+    <mat-expansion-panel hideToggle>
+      <mat-expansion-panel-header>
+        <mat-panel-title>
+      Fetch data
+        </mat-panel-title>
+      </mat-expansion-panel-header>
+      <a mat-list-item href="/#/playground">Playground</a>
+    </mat-expansion-panel>
+      <mat-expansion-panel hideToggle>
+        <mat-expansion-panel-header>
+          <mat-panel-title>
+            Nodes
+              </mat-panel-title>
+              </mat-expansion-panel-header>
+    <div *ngIf="dataSource$ | async as  clients;" >
+    
+        @for(c of clients ; track c){
+      <mat-list-item (click)="openInNewTab(c.uriPublic)"   mat-list-item > go to node {{c.indexId}} </mat-list-item>
+        }
+   
+    </div>
+      </mat-expansion-panel>
 </mat-accordion>
     </mat-nav-list>
   </mat-sidenav>
@@ -61,15 +84,8 @@
           <mat-icon aria-label="Side nav toggle icon">menu</mat-icon>
         </button>
       }
-      <span style="width:20% ; display: flex;"><div class="small-coin"><span>BCC</span></div> BCC</span>
+      <div style="width:20% ; display: flex ;align-items: center;"><div class="small-coin"><span>BCC</span></div> BLOCK CHAT</div>
     
-      <span *ngIf="dataSource$ | async as  clients;" style="width:80%" >
-<div style="display: flex; align-items: center; justify-content: flex-end;width:100%">
-            @for(c of clients ; track c){
-        <button (click)="openInNewTab(c.uriPublic)" matButton> go to  node  {{c.indexId}} </button>
-            }
-</div>
-      </span>
     
     </mat-toolbar>
     <router-outlet></router-outlet>

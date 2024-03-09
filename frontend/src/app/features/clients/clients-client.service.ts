@@ -2,16 +2,27 @@ import { Injectable } from '@angular/core';
 import { ClientsModule } from './clients.module';
 import { HttpClient } from '@angular/common/http';
 import { Observable } from 'rxjs';
-import { clientsInfoRsp } from '../../sharable';
+import { GraphQLResponse, clientsInfoRsp } from '../../sharable';
+import { GraphQLClientService } from '../GraphQL/graph-qlclient.service';
 
 @Injectable({
-  providedIn: ClientsModule
+  providedIn: ClientsModule,
 })
 export class ClientsClientService {
-  private  uri:string = "/api/v1/NodeDetails/Clients"
-  constructor(private  http:HttpClient) { }
-  getClients():Observable<clientsInfoRsp>{
-
-     return  this.http.get(this.uri) as  Observable<clientsInfoRsp>
+  constructor(
+    private graphQLClientService: GraphQLClientService
+  ) {}
+  getClients(): Observable<GraphQLResponse> {
+    const query = `
+     {
+       clients{
+            nodeId,
+            indexId,
+            uri , 
+            uriPublic, 
+        }
+     }
+     `;
+    return this.graphQLClientService.query(query) as Observable<GraphQLResponse>
   }
 }

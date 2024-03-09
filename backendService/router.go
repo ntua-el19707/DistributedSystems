@@ -1,11 +1,35 @@
 package main
 
 import (
+	"encoding/json"
 	"fmt"
+	"graphQL"
 	"log"
 	"net/http"
 	"services"
+
+	"github.com/graphql-go/graphql"
 )
+
+type graphQlHandler struct {
+	Schema *graphql.Schema
+}
+
+// ServeHTTP method to handle GraphQL requests
+func (h *graphQlHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+	query := r.URL.Query().Get("query")
+
+	params := graphql.Params{
+		Schema:        *h.Schema,
+		RequestString: query,
+	}
+	result := graphql.Do(params)
+
+	// Write the GraphQL response to the HTTP response writer
+	if err := json.NewEncoder(w).Encode(result); err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+	}
+}
 
 // message  that  will display to see  the availble  links  of server in log
 const setUpRouteMessage = "The route :%s is now  available\n"
@@ -24,6 +48,8 @@ func setUpMainRouter(s *http.ServeMux, c bool) {
 	fs := http.FileServer(http.Dir(staticDir))
 	s.Handle("/", http.StripPrefix("/", fs))
 
+	schema := graphQL.SetUp()
+	s.Handle("/graphql", &graphQlHandler{Schema: schema})
 	//set api
 	api := http.NewServeMux()
 	prefix := "/api"

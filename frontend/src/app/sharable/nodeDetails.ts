@@ -7,12 +7,10 @@ export interface  nodeDetails  {
 
 
 export interface  nodeInfoRsp {
-
     client: nodeDetails
     total:number
 } 
 export interface  clientsInfoRsp {
-
     clients: Array<nodeDetails>
     total:number
 } 

@@ -1,3 +1,4 @@
+import { NodeInfoGraphQL, TransactionCoinsRowGraphQL } from "./graphQL"
 import { nodeDetails } from "./nodeDetails"
 
 export interface BalanceRsp {
@@ -20,4 +21,8 @@ export interface transactionCoinResponse {
 
     transactions: Array<TransactionCoinsRow>
     nodeDetails:  nodeDetails
+} 
+export interface TransactionCoinsAndNodeDetails {
+  transactions: Array<TransactionCoinsRowGraphQL>;
+  nodeDetails: NodeInfoGraphQL;
 } 

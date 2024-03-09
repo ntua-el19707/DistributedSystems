@@ -8,6 +8,7 @@ import (
 
 const loggerTeplate = "[info]['%s'] : %s\n"
 const loggerErrorTeplate = "[error]['%s'] : %s\n"
+const fatalTeplate = "[Fatal]['%s'] : %s\n"
 
 type LoggerService interface {
 	Service.Service                 // logger is  a service
@@ -60,7 +61,7 @@ func (l Logger) Error(msg string) {
 	@Returns  void
 */
 func (l Logger) Fatal(msg string) {
-	log.Fatalf(loggerTeplate, l.ServiceName, msg)
+	log.Fatalf(fatalTeplate, l.ServiceName, msg)
 
 }
 
