@@ -216,6 +216,31 @@ func allMsgV1(w http.ResponseWriter, r *http.Request) {
 /*
 *
 
+	stakeController  -  acontroller  to set stake  change  from initial
+	@Param w  http.ResponseWriter
+	@Param r  * http.Request
+*/
+func stakeController(w http.ResponseWriter, r *http.Request) {
+	switch r.Method {
+	case http.MethodPost:
+		var stakeR SetStakeRequest
+		errcode, err := stakeR.Parse(r)
+		if err != nil {
+			jsonErrorBuilder(w, errcode, err.Error())
+			return
+		}
+		services.FindBalanceService.SetStake(stakeR.Stake)
+		jsonBuilder(w, http.StatusOK, struct{}{})
+	default:
+		message := fmt.Sprintf(httpErrorResponseNotImplemented, r.Method, r.URL.Path)
+		jsonErrorBuilder(w, http.StatusMethodNotAllowed, message)
+
+	}
+}
+
+/*
+*
+
 	inboxV1 - test healthiness of process
 	@Param  w http.ResponseWriter
 	@Param  r * http.Request

@@ -10,6 +10,19 @@ import (
 type RequestTransactions interface {
 	valid(To, Total int) error
 }
+type SetStakeRequest struct {
+	Stake float64 `json:"stake"`
+}
+
+func (r *SetStakeRequest) Parse(request *http.Request) (int16, error) {
+	decoder := json.NewDecoder(request.Body)
+	err := decoder.Decode(r)
+	if err != nil {
+		return http.StatusBadRequest, err
+	}
+	return http.StatusOK, nil
+
+}
 
 type TranferMoney struct {
 	To     int     `json:"to"`

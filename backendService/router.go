@@ -97,6 +97,8 @@ func setRouterForV1(v1 *http.ServeMux, prefixV1 string, c bool) {
 	//-- Health --
 	log.Printf(setUpRouteMessage, fmt.Sprintf("%s/health", prefixV1))
 	v1.HandleFunc("/health", healthV1)
+	log.Printf(setUpRouteMessage, fmt.Sprintf("%s/stake", prefixV1))
+	v1.HandleFunc("/stake", SystemInitilize(stakeController))
 
 	log.Printf(setUpRouteMessage, fmt.Sprintf("%s/transfer", prefixV1))
 	v1.HandleFunc("/transfer", SystemInitilize(TransferMoneyV1))

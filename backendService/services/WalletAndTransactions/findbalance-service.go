@@ -78,6 +78,8 @@ type BalanceService interface {
 	findAndLock(amount float64) (float64, error)
 	GetTransactions(keys []rsa.PublicKey, times []int64) TransactionListCoin
 	GetChain() ChainCoinDTO
+	SetStake(coins float64)
+	GetStake() float64
 }
 
 type BalanceImplementation struct {
@@ -85,6 +87,13 @@ type BalanceImplementation struct {
 	BlockChainService BlockChainCoinsService
 
 	SystemInfoService SystemInfo.SystemInfoService
+}
+
+func (balance *BalanceImplementation) SetStake(coins float64) {
+	balance.BlockChainService.SetStakeCoins(coins)
+}
+func (balance *BalanceImplementation) GetStake() float64 {
+	return balance.BlockChainService.GetStakeCoins()
 }
 
 func (balance *BalanceImplementation) Construct() error {

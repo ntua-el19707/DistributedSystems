@@ -28,10 +28,24 @@ type RabbitMqService interface {
 
 const serviceName = "RabbitMqService"
 
-func (s *RabbitMqImpl) PublishStake(stake entitys.StakePack, Dst QueueAndExchange) error { return nil }
+func (s *RabbitMqImpl) PublishStake(stake entitys.StakePack, Dst QueueAndExchange) error {
+	providers := &s.Providers
+	topic := Dst.Exchange
+	return MessageSystem.ProducerBroadCast(stake, providers.RabbitMqUri, topic, providers.LoggerService)
+
+}
 func (s *RabbitMqImpl) ConsumeStake(Dsr QueueAndExchange) entitys.StakePack {
-	var zero entitys.StakePack
-	return zero
+	var pack entitys.StakePack
+	var err error
+	providers := &s.Providers
+	if providers.ctr == true {
+		pack, err = providers.consumerStakeCoin(providers.RabbitMqUri, Dsr.Queue, providers.LoggerService)
+		if err != nil {
+			providers.LoggerService.Fatal(err.Error())
+		}
+	}
+
+	return pack
 }
 
 type QueueAndExchange struct {
@@ -45,6 +59,7 @@ type RabbitMqProviders struct {
 	consumerBlockMsg                func(string, string, Logger.LoggerService) (entitys.BlockMessageMessageRabbitMq, error)
 	consumerBlockCoin               func(string, string, Logger.LoggerService) (entitys.BlockCoinMessageRabbitMq, error)
 	consumerSystemInfo              func(string, string, Logger.LoggerService) (entitys.RabbitMqSystemInfoPack, error)
+	consumerStakeCoin               func(string, string, Logger.LoggerService) (entitys.StakePack, error)
 	channelTransactionCoinSet       chan entitys.TransactionCoinSet
 	channelTransactionMsg           chan entitys.TransactionMessageSet
 	ctr                             bool
@@ -71,6 +86,7 @@ func (p *RabbitMqProviders) Construct() error {
 	p.consumerBlockMsg = MessageSystem.ConsumeOne[entitys.BlockMessageMessageRabbitMq]
 	p.consumerBlockCoin = MessageSystem.ConsumeOne[entitys.BlockCoinMessageRabbitMq]
 	p.consumerSystemInfo = MessageSystem.ConsumeOne[entitys.RabbitMqSystemInfoPack]
+	p.consumerStakeCoin = MessageSystem.ConsumeOne[entitys.StakePack]
 	p.channelTransactionCoinSet = make(chan entitys.TransactionCoinSet)
 	p.channelTransactionMsg = make(chan entitys.TransactionMessageSet)
 

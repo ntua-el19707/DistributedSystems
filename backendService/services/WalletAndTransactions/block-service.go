@@ -22,12 +22,14 @@ type BlockChainService interface {
 	InsertTransaction(t []entitys.TransactionCoinEntityRoot)
 }
 type BlockChainCoinsImpl struct {
-	Chain       entitys.BlockChainCoins
-	Workers     []rsa.PublicKey
-	Services    BlockServiceProviders
-	mu          sync.Mutex
-	index       int
-	ScaleFactor float64
+	Chain            entitys.BlockChainCoins
+	Workers          []rsa.PublicKey
+	Services         BlockServiceProviders
+	mu               sync.Mutex
+	index            int
+	ScaleFactor      float64
+	queueAndExchange RabbitMqService.QueueAndExchange
+	who              int
 }
 type BlockServiceProviders struct {
 	LoggerService         Logger.LoggerService
@@ -85,6 +87,9 @@ type BlockChainCoinsService interface {
 	RetriveChain() entitys.BlockChainCoins
 	InsertNewBlock(block entitys.BlockCoinEntity) error
 	SetWorkers(workers []rsa.PublicKey)
+	SetWhoAndQueue(who int, queueAndExchange RabbitMqService.QueueAndExchange)
+	SetStakeCoins(coins float64)
+	GetStakeCoins() float64
 }
 
 func (service *BlockChainCoinsImpl) Construct() error {
@@ -103,7 +108,12 @@ func (service *BlockChainCoinsImpl) SetWorkers(workers []rsa.PublicKey) {
 func (service *BlockChainCoinsImpl) RetriveChain() entitys.BlockChainCoins {
 	return service.Chain
 }
-
+func (service *BlockChainCoinsImpl) SetStakeCoins(coins float64) {
+	service.ScaleFactor = coins
+}
+func (service *BlockChainCoinsImpl) GetStakeCoins() float64 {
+	return service.ScaleFactor
+}
 func (service *BlockChainCoinsImpl) Genesis(capicity, workers int, perNode float64) error {
 	err := service.Services.valid()
 	if err != nil {
@@ -152,6 +162,11 @@ func (service *BlockChainCoinsImpl) findAndLock(amount float64) (float64, error)
 	return total - frozen, nil
 
 }
+func (service *BlockChainCoinsImpl) SetWhoAndQueue(who int, queueAndExchange RabbitMqService.QueueAndExchange) {
+	service.who = who
+	service.queueAndExchange = queueAndExchange
+}
+
 func (service *BlockChainCoinsImpl) GetTransactions(from, twoWay bool, keys []rsa.PublicKey, times []int64) []entitys.TransactionCoins {
 	logger := service.Services.LoggerService
 	service.mu.Lock()
@@ -190,17 +205,53 @@ func (service *BlockChainCoinsImpl) InsertTransaction(t entitys.TransactionCoinS
 	if lastBlock.BlockEntity.Capicity == service.index {
 		logger.Log("Start  Mine Block Coins")
 
-		stake := Stake.StakeCoinBlockChain{
-			Block:   lastBlock,
-			Workers: service.Workers}
+		/*stake := Stake.StakeCoinBlockChain{
+		Block:   lastBlock,
+		Workers: service.Workers}*/
+		sproviders := Stake.StakeProviders2{RabbitMq: service.Services.RabbitMqService}
+		stake := Stake.StakeBCCv3struct{
+			HashCurrent:      lastBlock.BlockEntity.CurrentHash,
+			Workers:          service.Workers,
+			Who:              service.who,
+			Providers:        sproviders,
+			QueueAndExchange: service.queueAndExchange,
+		}
+
 		err := stake.Construct()
 		if err != nil {
 			logger.Fatal(err.Error())
 		}
 		service.Services.LotteryService.LoadStakeService(&stake)
-		luckyOne, err := service.Services.LotteryService.Spin(service.ScaleFactor)
+		stakeCoins := service.ScaleFactor
+		//charge
+		err = service.Services.WalletServiceInstance.Freeze(stakeCoins)
+		if err != nil {
+			errMsg := fmt.Sprintf("Could not Freeze  money due to %s ", err.Error())
+			logger.Fatal(errMsg)
+			return err
+		}
+		frozen := service.Services.WalletServiceInstance.GetFreeze()
+		total := service.Chain.FindBalance(service.Services.WalletServiceInstance.GetPub())
+		if total-frozen < 0 {
+
+			err := service.Services.WalletServiceInstance.UnFreeze(stakeCoins)
+			if err != nil {
+				errMsg := fmt.Sprintf("Could not UnFreeze  money due to %s ", err.Error())
+				logger.Fatal(errMsg)
+				return err
+			}
+			stakeCoins = 0 //unlucky  no money to stake
+		}
+
+		luckyOne, err := service.Services.LotteryService.Spin(stakeCoins)
 		if err != nil {
 			logger.Fatal(err.Error())
+		}
+		err = service.Services.WalletServiceInstance.UnFreeze(stakeCoins) //uncharge
+		if err != nil {
+			errMsg := fmt.Sprintf("Could not UnFreeze  money due to %s ", err.Error())
+			logger.Fatal(errMsg)
+			return err
 		}
 		if EqualPublicKeys(&processPublicKey, &luckyOne) {
 			//Win And Miner
@@ -287,6 +338,8 @@ type MockBlockChainCoins struct {
 func (mock *MockBlockChainCoins) Construct() error {
 	return mock.ErrConstruct
 }
+func (mock *MockBlockChainCoins) SetWhoAndQueue(who int, queueAndExchange RabbitMqService.QueueAndExchange) {
+}
 func (mock *MockBlockChainCoins) SetWorkers(workers []rsa.PublicKey) {}
 func (mock *MockBlockChainCoins) RetriveChain() entitys.BlockChainCoins {
 	mock.CallRetriveChain++
@@ -337,14 +390,17 @@ type BlockChainMsgService interface {
 	RetriveChain() entitys.BlockChainMessage
 	InsertNewBlock(block entitys.BlockMessage) error
 	SetWorkers(workers []rsa.PublicKey)
+	SetWhoAndQueue(who int, queueAndExchange RabbitMqService.QueueAndExchange)
 }
 type BlockChainMsgImpl struct {
-	Chain       entitys.BlockChainMessage
-	Workers     []rsa.PublicKey
-	Services    BlockServiceProviders
-	mu          sync.Mutex
-	ScaleFactor float64
-	index       int
+	Chain            entitys.BlockChainMessage
+	Workers          []rsa.PublicKey
+	Services         BlockServiceProviders
+	mu               sync.Mutex
+	ScaleFactor      float64
+	index            int
+	queueAndExchange RabbitMqService.QueueAndExchange
+	who              int
 }
 
 func (service *BlockChainMsgImpl) Construct() error {
@@ -358,6 +414,10 @@ func (service *BlockChainMsgImpl) Construct() error {
 }
 func (service *BlockChainMsgImpl) RetriveChain() entitys.BlockChainMessage {
 	return service.Chain
+}
+func (service *BlockChainMsgImpl) SetWhoAndQueue(who int, queueAndExchange RabbitMqService.QueueAndExchange) {
+	service.who = who
+	service.queueAndExchange = queueAndExchange
 }
 func (service *BlockChainMsgImpl) InsertNewBlock(block entitys.BlockMessage) error {
 	var err error
@@ -433,17 +493,25 @@ func (service *BlockChainMsgImpl) InsertTransaction(t entitys.TransactionMessage
 	if lastBlock.BlockEntity.Capicity == service.index {
 		// -- MINE --
 		logger.Log("Start Mine")
-		stake := Stake.StakeMesageBlockChain{
+		/*stake := Stake.StakeMesageBlockChain{
 			Block:   lastBlock,
 			Workers: service.Workers,
+		}*/
+		sproviders := Stake.StakeProviders2{RabbitMq: service.Services.RabbitMqService}
+		stake := Stake.StakeBCCv3struct{
+			HashCurrent:      lastBlock.BlockEntity.CurrentHash,
+			Workers:          service.Workers,
+			Who:              service.who,
+			Providers:        sproviders,
+			QueueAndExchange: service.queueAndExchange,
 		}
+
 		err := stake.Construct()
 		if err != nil {
-			// harakiri
 			logger.Fatal(err.Error())
-			return err
 		}
 		service.Services.LotteryService.LoadStakeService(&stake)
+
 		luckyOne, err := service.Services.LotteryService.Spin(service.ScaleFactor)
 		if err != nil {
 			// harakiri

@@ -40,6 +40,10 @@ func NodeDetailsModel(name string) (*graphql.Object, *graphql.Object) {
 				Type:        graphql.Int,
 				Description: "total workers",
 			},
+			"stakeCoins": &graphql.Field{
+				Type:        graphql.Float,
+				Description: "coin stake  of  node ",
+			},
 		},
 	})
 
@@ -56,8 +60,9 @@ func GetNodeSelfField() *graphql.Field {
 		Resolve: func(p graphql.ResolveParams) (interface{}, error) {
 			node, total := services.SystemInfoService.NodeDetails(services.WalletService.GetPub())
 			return map[string]interface{}{
-				"client": node,
-				"total":  total,
+				"client":     node,
+				"total":      total,
+				"stakeCoins": services.FindBalanceService.GetStake(),
 			}, nil
 		},
 	}

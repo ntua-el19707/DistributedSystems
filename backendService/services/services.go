@@ -34,6 +34,8 @@ var scaleFactorCoin float64
 
 var capicity_Msg, capicity_Coin, expectWorkers int
 var per_Node float64
+var stakeCoinQueue RabbitMqService.QueueAndExchange
+var stakeMsgQueue RabbitMqService.QueueAndExchange
 
 func setQueues(node, rabbitMqUri string) {
 	logger := Logger.Logger{ServiceName: "Set Queues And Constuct Wallet"}
@@ -54,7 +56,9 @@ func setQueues(node, rabbitMqUri string) {
 	BlockMsgQueueExchange := genSet("BlockCoins", "BCOIN", node)
 	BlockCoinQueueExchange := genSet("BlockMsg", "BMSG", node)
 	SystemInfoQueue := genSet("SystemInfo", "SINFO", node)
-	providers := RabbitMqService.RabbitMqProviders{RabbitMqUri: RabbitMqUri, SystemInfoQueue: SystemInfoQueue, TransactionCoinSetQueueExchange: TransactionCoinSetQueueExchange, TransactionMsgSetQueueExchange: TransactionMsgSetQueueExchange, BlockCoinQueueExchange: BlockCoinQueueExchange, BlockMsgQueueExchange: BlockMsgQueueExchange}
+	stakeCoinQueue = genSet("StakeCoins", "STCOIN", node)
+	stakeMsgQueue = genSet("StakeMsg", "STMSG", node)
+	providers := RabbitMqService.RabbitMqProviders{RabbitMqUri: RabbitMqUri, StakeBlockMsgQueue: stakeMsgQueue, StakeBlockCoinQueue: stakeCoinQueue, SystemInfoQueue: SystemInfoQueue, TransactionCoinSetQueueExchange: TransactionCoinSetQueueExchange, TransactionMsgSetQueueExchange: TransactionMsgSetQueueExchange, BlockCoinQueueExchange: BlockCoinQueueExchange, BlockMsgQueueExchange: BlockMsgQueueExchange}
 	WalletService = WalletAndTransactions.WalletStructV1Implementation{}
 	bootStrapOrDie(&WalletService, &logger)
 	RabbitMqS = &RabbitMqService.RabbitMqImpl{Providers: providers}
@@ -167,7 +171,6 @@ func providers(c bool) {
 		}
 		RabbitMqS.ConsumeNextBlockCoin()
 		RabbitMqS.ConsumeNextBlockMsg()
-
 	} else {
 		blockCoin := RabbitMqS.ConsumeNextBlockCoin()
 		blockMsg := RabbitMqS.ConsumeNextBlockMsg()
@@ -177,6 +180,10 @@ func providers(c bool) {
 		blockChainMsgService.SetWorkers(SystemInfoService.GetWorkers())
 		//NOW The re is  litle  a chance to fail Mine only if  internal error if err =>  commit  harakiri
 	}
+	thisNode, _ := SystemInfoService.NodeDetails(WalletService.GetPub())
+
+	blockChainCoinService.SetWhoAndQueue(thisNode.IndexId, stakeCoinQueue)
+	blockChainMsgService.SetWhoAndQueue(thisNode.IndexId, stakeMsgQueue)
 	FindBalanceService = &WalletAndTransactions.BalanceImplementation{
 		BlockChainService: blockChainCoinService,
 		SystemInfoService: SystemInfoService,
