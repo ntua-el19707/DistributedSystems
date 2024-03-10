@@ -1,0 +1,32 @@
+<mat-card class="custom-card">
+    <mat-card-header>
+        <div style="display: flex; align-items: center;">
+            <mat-card-title style="flex: 1;">Change Stake</mat-card-title>
+            <div *ngIf="(happening$ | async) as happening">
+                @if(happening){
+                <mat-spinner style="max-width: 25px; max-height: 25px;"></mat-spinner>
+                }
+            </div>
+        </div>
+    </mat-card-header>
+    <mat-card-content class="custom-card-content">
+        <form [formGroup]="TransferForm" class="custom-form">
+  
+            <mat-form-field class="custom-form-field">
+                <mat-label>Coins</mat-label>
+                <input type="string" matInput [formControl]="TransferForm.controls.Coins">
+                @if (TransferForm.controls.Coins.hasError('pattern')) {
+                <mat-error>Please enter a valid coins</mat-error>
+                }
+                @if (TransferForm.controls.Coins.hasError('required')) {
+                <mat-error>Coins is <strong>required</strong></mat-error>
+                }
+            </mat-form-field>
+        </form>
+    </mat-card-content>
+    <hr class="custom-form-field">
+    <mat-card-actions class="custom-card-actions">
+        <button mat-raised-button color="primary" class="custom-form-field" (click)="submit()"
+            [disabled]="!TransferForm.valid">Set Stake</button>
+    </mat-card-actions>
+</mat-card>

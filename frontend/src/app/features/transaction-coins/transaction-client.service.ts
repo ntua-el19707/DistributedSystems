@@ -21,37 +21,15 @@ export class TransactionClientService {
     private navigateService: NavigateService,
     private openErrordialogService: OpenErrordialogService
   ) {}
-  getBalance()
-  : Observable<GraphQLResponse> {
-    const query = `{
-  nodeTransactions {
-      Transactions{
-        From , 
-        To , 
-        Coins , 
-        Reason , 
-        Nonce  , 
-        Time , TransactionId
-      }
-  }
-   self{
-          client{  
-            nodeId,
-            indexId,
-            uri , 
-            uriPublic
-          }
-        }
-}
-`;
+  getBalance(): Observable<GraphQLResponse> {
+    const query = `{balance {availableBalance}}`;
     return this.graphQLClientService.query(
       query
     ) as Observable<GraphQLResponse>;
   }
 
- 
-  getMyTransactions(mode :boolean): Observable<GraphQLResponse> {
-  let query = `{
+  getMyTransactions(mode: boolean): Observable<GraphQLResponse> {
+    let query = `{
   nodeTransactions {
       Transactions{
         From , 
@@ -71,24 +49,23 @@ export class TransactionClientService {
           }
         }
 `;
-if (mode){
-  query += `allNodes{
+    if (mode) {
+      query += `allNodes{
         nodeId,
             indexId,
             uri , 
             uriPublic
   }}`;
-
-}else {
-  query += "}"
-}
+    } else {
+      query += '}';
+    }
     return this.graphQLClientService.query(
       query
     ) as Observable<GraphQLResponse>;
   }
 
-  getAllTransactions(mode:boolean): Observable<GraphQLResponse> {
-  let  query = `{
+  getAllTransactions(mode: boolean): Observable<GraphQLResponse> {
+    let query = `{
   getTransactionsCoins{
       Transactions{
         From , 
@@ -133,6 +110,25 @@ if (mode){
       amount: coins,
     };
     this.http.post('/api/v1/transfer', body).subscribe(
+      (r) => {
+        this.navigateService.navigateTo('/');
+      },
+      (err) => {
+        this.openErrordialogService.errorDialog(err.error.Message);
+        happening$.next(false);
+      },
+      () => {}
+    );
+  }
+  postStake(
+    coins: number,
+    happening$: BehaviorSubject<boolean>
+  ) {
+    happening$.next(true);
+    const body: {stake:number} = {
+      stake: coins,
+    };
+    this.http.post('/api/v1/stake', body).subscribe(
       (r) => {
         this.navigateService.navigateTo('/');
       },

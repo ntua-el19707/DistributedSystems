@@ -8,6 +8,8 @@ import { TrasferCoinsComponent } from './pages/trasfer-coins/trasfer-coins.compo
 import { SendMessageFormPageComponent } from './pages/send-message-form-page/send-message-form-page.component';
 import { AllTransacionsCoinsComponent } from './pages/all-transacions-coins/all-transacions-coins.component';
 import { PlaygroundComponent } from './pages/playground/playground.component';
+import { FormStakeComponent } from './pages/form-stake/form-stake.component';
+
 
 export const routes: Routes = [
 {path:'' , component:HomePageComponent},
@@ -17,5 +19,6 @@ export const routes: Routes = [
 {path:'transfer' , component:TrasferCoinsComponent},
 {path:'sendMessage' , component:SendMessageFormPageComponent},
 {path:'transactions' ,component:AllTransacionsCoinsComponent} ,
-{path:'playground', component:PlaygroundComponent} 
+{path:'playground', component:PlaygroundComponent}  ,
+{path:'changeStake' , component:FormStakeComponent}
 ];
