@@ -20,5 +20,4 @@ export const routes: Routes = [
 {path:'sendMessage' , component:SendMessageFormPageComponent},
 {path:'transactions' ,component:AllTransacionsCoinsComponent} ,
 {path:'playground', component:PlaygroundComponent}  ,
-{path:'changeStake' , component:FormStakeComponent}
 ];
