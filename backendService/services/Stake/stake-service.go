@@ -439,6 +439,9 @@ func (service *StakeBCCv3struct) MapOfDistibutesRoundUp(scaleFactor float64) (ma
 	logger := service.Providers.LoggerService
 	logger.Log("Start MapOfDistibutesRoundUp ")
 
+	if scaleFactor == 0 {
+		scaleFactor = 0.5 // for  thethe cases i f all workers  hwve all the coins  reserverd  that time  not creating a 0 ,0,0,0... map
+	}
 	amounts, total := service.distributionOfStake(scaleFactor)
 	roundedMap := make(map[rsa.PublicKey]int)
 	sum := 0
