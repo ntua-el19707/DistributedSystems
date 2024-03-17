@@ -224,35 +224,35 @@ func (service *BlockChainCoinsImpl) InsertTransaction(t entitys.TransactionCoinS
 		service.Services.LotteryService.LoadStakeService(&stake)
 		stakeCoins := service.ScaleFactor
 		//charge
-		err = service.Services.WalletServiceInstance.Freeze(stakeCoins)
-		if err != nil {
-			errMsg := fmt.Sprintf("Could not Freeze  money due to %s ", err.Error())
-			logger.Fatal(errMsg)
-			return err
-		}
-		frozen := service.Services.WalletServiceInstance.GetFreeze()
-		total := service.Chain.FindBalance(service.Services.WalletServiceInstance.GetPub())
-		if total-frozen < 0 {
+		/*		err = service.Services.WalletServiceInstance.Freeze(stakeCoins)
+				if err != nil {
+					errMsg := fmt.Sprintf("Could not Freeze  money due to %s ", err.Error())
+					logger.Fatal(errMsg)
+					return err
+				}
+				frozen := service.Services.WalletServiceInstance.GetFreeze()
+				total := service.Chain.FindBalance(service.Services.WalletServiceInstance.GetPub())
+				if total-frozen < 0 {
 
-			err := service.Services.WalletServiceInstance.UnFreeze(stakeCoins)
-			if err != nil {
-				errMsg := fmt.Sprintf("Could not UnFreeze  money due to %s ", err.Error())
-				logger.Fatal(errMsg)
-				return err
-			}
-			stakeCoins = 0 //unlucky  no money to stake
-		}
+					err := service.Services.WalletServiceInstance.UnFreeze(stakeCoins)
+					if err != nil {
+						errMsg := fmt.Sprintf("Could not UnFreeze  money due to %s ", err.Error())
+						logger.Fatal(errMsg)
+						return err
+					}
+					stakeCoins = 0 //unlucky  no money to stake
+				}*/
 
 		luckyOne, err := service.Services.LotteryService.Spin(stakeCoins)
 		if err != nil {
 			logger.Fatal(err.Error())
 		}
-		err = service.Services.WalletServiceInstance.UnFreeze(stakeCoins) //uncharge
+		/*err = service.Services.WalletServiceInstance.UnFreeze(stakeCoins) //uncharge
 		if err != nil {
 			errMsg := fmt.Sprintf("Could not UnFreeze  money due to %s ", err.Error())
 			logger.Fatal(errMsg)
 			return err
-		}
+		}*/
 		if EqualPublicKeys(&processPublicKey, &luckyOne) {
 			//Win And Miner
 			block := entitys.BlockCoinEntity{}
