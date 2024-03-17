@@ -205,18 +205,18 @@ func (service *BlockChainCoinsImpl) InsertTransaction(t entitys.TransactionCoinS
 	if lastBlock.BlockEntity.Capicity == service.index {
 		logger.Log("Start  Mine Block Coins")
 
-		/*stake := Stake.StakeCoinBlockChain{
-		Block:   lastBlock,
-		Workers: service.Workers}*/
-		sproviders := Stake.StakeProviders2{RabbitMq: service.Services.RabbitMqService}
-		stake := Stake.StakeBCCv3struct{
-			HashCurrent:      lastBlock.BlockEntity.CurrentHash,
-			Workers:          service.Workers,
-			Who:              service.who,
-			Providers:        sproviders,
-			QueueAndExchange: service.queueAndExchange,
-		}
-
+		stake := Stake.StakeCoinBlockChain{
+			Block:   lastBlock,
+			Workers: service.Workers}
+		/*		sproviders := Stake.StakeProviders2{RabbitMq: service.Services.RabbitMqService}
+				stake := Stake.StakeBCCv3struct{
+					HashCurrent:      lastBlock.BlockEntity.CurrentHash,
+					Workers:          service.Workers,
+					Who:              service.who,
+					Providers:        sproviders,
+					QueueAndExchange: service.queueAndExchange,
+				}
+		*/
 		err := stake.Construct()
 		if err != nil {
 			logger.Fatal(err.Error())
@@ -493,19 +493,19 @@ func (service *BlockChainMsgImpl) InsertTransaction(t entitys.TransactionMessage
 	if lastBlock.BlockEntity.Capicity == service.index {
 		// -- MINE --
 		logger.Log("Start Mine")
-		/*stake := Stake.StakeMesageBlockChain{
+		stake := Stake.StakeMesageBlockChain{
 			Block:   lastBlock,
 			Workers: service.Workers,
-		}*/
-		sproviders := Stake.StakeProviders2{RabbitMq: service.Services.RabbitMqService}
-		stake := Stake.StakeBCCv3struct{
-			HashCurrent:      lastBlock.BlockEntity.CurrentHash,
-			Workers:          service.Workers,
-			Who:              service.who,
-			Providers:        sproviders,
-			QueueAndExchange: service.queueAndExchange,
 		}
-
+		/*		sproviders := Stake.StakeProviders2{RabbitMq: service.Services.RabbitMqService}
+				stake := Stake.StakeBCCv3struct{
+					HashCurrent:      lastBlock.BlockEntity.CurrentHash,
+					Workers:          service.Workers,
+					Who:              service.who,
+					Providers:        sproviders,
+					QueueAndExchange: service.queueAndExchange,
+				}
+		*/
 		err := stake.Construct()
 		if err != nil {
 			logger.Fatal(err.Error())
