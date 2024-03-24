@@ -5,7 +5,7 @@ My solution will be  implemented  with  golang as  the  backend  language
 #BUILD THE SYSTEM
 1)  BUILD FRONTEND
 2)  COPY frontend to backend
-3)  Build the backend
+3)  Build backend
 commands
 
 build.sh
